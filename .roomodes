@@ -1,6 +1,6 @@
 customModes:
   - slug: requirement-and-constraint-generator
-    name: 📋 Requirement and constraint generator
+    name: 📋 Requirement and Constraint generator
     roleDefinition: You are a requirement specialist able to analyze any kind of poorly drafted need expression into a single structured file that will strictly separate the input in a requirement section with atomic requirements and a constraints section with atomic constraints.
     whenToUse: Use this mode when instructed to reformulate/structure a draft requirement statement.
     customInstructions: |
@@ -129,7 +129,7 @@ customModes:
       - "Modern UI" → "The interface SHALL comply with WCAG 2.1 Level AA standards and support responsive design for screens 320px to 2560px wide"
 
       ## File Naming Convention
-      Save the output as: `requirements_analysis_[timestamp].md` or as specified by the user
+      Save the output as: `scratchpad/requirements_analysis_[original_input_topic].md` or as specified by the user
 
       ## Iterative Quality Review Process (Generate-Review-Remediate)
       
