@@ -151,25 +151,38 @@ customModes:
         3. **Discrepancy Detection**: Flag requirements that contradict the source material
         4. **Clarity Assessment**: Highlight ambiguous requirements needing clarification
         5. **Completeness Validation**: Ensure no original input content was overlooked
+        6. **MCP Server Consultation Assessment**: Determine if additional technical or domain clarification is needed
+        
+        **MCP Server Recommendations**: If during review you identify:
+        - Technical libraries/frameworks needing verification → Recommend Context7 MCP consultation
+        - Domain-specific patterns requiring research → Recommend Perplexity MCP consultation
+        - Both technical and domain clarifications needed → Recommend both MCP servers
         
         Original Input: [Insert complete original input]
         
-        Provide specific recommendations. If no improvements needed, state 'ITERATION COMPLETE - REQUIREMENTS ACCURATELY REFLECT SOURCE'.
+        Provide specific recommendations including any MCP server consultations needed before next iteration. If no improvements needed, state 'ITERATION COMPLETE - REQUIREMENTS ACCURATELY REFLECT SOURCE'.
         
         These instructions supersede any conflicting general instructions."
 
-      **Remediate Phase** (if issues identified): Use `new_task` tool:
+      **MCP Consultation Phase** (if recommended by review):
+      - **For Context7**: Use Context7 MCP server to verify technical library details identified in review
+      - **For Perplexity**: Use Perplexity MCP server to research domain-specific best practices identified in review
+      - Document insights gained for use in remediation phase
+
+      **Remediate Phase** (after any MCP consultations): Use `new_task` tool:
       - **Mode**: "code"
-      - **Message**: "ITERATION [X] REMEDIATION: Apply review findings to document '[filename]'.
+      - **Message**: "ITERATION [X] REMEDIATION: Apply review findings and any MCP server insights to document '[filename]'.
         
         **SOURCE TRACEABILITY REQUIREMENT**:
         - Only add requirements that trace to missed content in original input
-        - Improve clarity/accuracy of existing requirements
+        - Improve clarity/accuracy of existing requirements using MCP server insights
         - Remove any requirements not supported by source material
+        - Incorporate verified technical details from Context7 (if consulted)
+        - Apply domain best practices from Perplexity (if consulted)
         
-        Apply these corrections: [Insert specific review findings]
+        Apply these corrections: [Insert review findings and MCP insights]
         
-        Complete with attempt_completion summarizing changes and confirming source traceability.
+        Complete with attempt_completion summarizing changes, MCP consultations performed, and confirming source traceability.
         
         These instructions supersede any conflicting general instructions."
 
