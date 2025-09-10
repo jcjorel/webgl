@@ -32,7 +32,7 @@
             z-index: 1;
         }
 
-        /* WebGL canvas layer */
+        /* WebGL canvas layer for logo */
         #webgl-canvas {
             position: fixed;
             top: 0;
@@ -43,6 +43,18 @@
             background: transparent;
         }
 
+        /* Shooting stars canvas layer (independent, no mouse control) */
+        #shooting-stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+            pointer-events: none;
+            background: transparent;
+        }
+
         /* Vaporwave overlay layer */
         #vaporwave-canvas {
             position: fixed;
@@ -50,7 +62,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 3;
+            z-index: 4;
             pointer-events: none;
             background: transparent;
         }
@@ -72,8 +84,11 @@
     <!-- Fixed background layer -->
     <div class="background"></div>
     
-    <!-- WebGL canvas for 3D scene -->
+    <!-- WebGL canvas for 3D logo scene -->
     <canvas id="webgl-canvas"></canvas>
+    
+    <!-- Shooting stars canvas (independent) -->
+    <canvas id="shooting-stars-canvas"></canvas>
     
     <!-- Vaporwave overlay canvas -->
     <canvas id="vaporwave-canvas"></canvas>
@@ -86,10 +101,15 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // Global variables
+        // Global variables for main logo scene
         let scene, camera, renderer, controls;
         let logoGroup, glassPlateMesh, logoMesh, stockText;
+        
+        // Separate variables for shooting stars scene (independent)
+        let starsScene, starsCamera, starsRenderer;
         let shootingStars = [];
+        
+        // Vaporwave variables
         let vaporwaveCanvas, vaporwaveCtx, vaporwaveLines = [];
         const AMZN_STOCK_PRICE = 238.24;
 
@@ -110,14 +130,14 @@
                 this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 
                 this.line = new THREE.Line(this.geometry, this.material);
-                scene.add(this.line);
+                starsScene.add(this.line);  // Add to stars scene instead of main scene
             }
 
             reset() {
-                // Start shooting stars from the MOUNTAIN SILHOUETTE LINE where desert meets sky
-                // The horizon in the desert image is at the mountain tops, extremely low
+                // Start shooting stars from just ABOVE the background horizon line
+                // The horizon in the desert image is at the mountain tops
                 const startX = (Math.random() - 0.5) * 90;    // Very wide spread along horizon
-                const startY = -6 + Math.random() * 0.3;      // At the mountain silhouette line
+                const startY = 12.5 + Math.random() * 0.5;     // Well above the mountain silhouette line
                 const startZ = -55;                           // Far away at the horizon
                 
                 this.position = new THREE.Vector3(startX, startY, startZ);
@@ -151,16 +171,31 @@
                 // Update position
                 this.position.add(this.velocity);
                 
-                // Simple opacity based on life cycle - fade in, stay visible, fade out
-                if (this.life < 20) {
-                    // Fade in
-                    this.opacity = this.life / 20;
-                } else if (this.life < this.maxLife - 20) {
-                    // Full visibility
-                    this.opacity = 1.0;
+                // Variable alpha channel depending on distance - brighter as they approach camera
+                // (simulating meteors entering atmosphere and burning brighter)
+                // Use starsCamera for distance calculation since stars are in separate scene
+                const distanceToCamera = this.position.distanceTo(starsCamera.position);
+                
+                // Map distance to opacity: farther = dimmer, closer = brighter
+                // Max distance ~85 units (from horizon), min distance ~15 units (passing camera)
+                const maxDistance = 85;
+                const minDistance = 15;
+                
+                // Calculate opacity based on distance (inverse relationship)
+                if (distanceToCamera > maxDistance) {
+                    this.opacity = 0.2; // Slightly brighter at horizon for visibility
+                } else if (distanceToCamera < minDistance) {
+                    this.opacity = 1.0; // Full brightness when passing near camera
                 } else {
-                    // Fade out
-                    this.opacity = (this.maxLife - this.life) / 20;
+                    // Exponential interpolation for more dramatic brightening effect
+                    const normalizedDistance = (distanceToCamera - minDistance) / (maxDistance - minDistance);
+                    // Use power function for more dramatic brightening as stars approach
+                    this.opacity = 1.0 - Math.pow(normalizedDistance, 2) * 0.8; // Range from 0.2 to 1.0
+                }
+                
+                // Apply a minimum fade-in at the very beginning for smooth appearance
+                if (this.life < 5) {
+                    this.opacity *= (this.life / 5);
                 }
                 
                 // Update trail
@@ -185,7 +220,7 @@
                 this.material.opacity = Math.max(0, Math.min(1, this.opacity));
                 
                 // Reset if star passes behind camera, goes below horizon, or lived too long
-                if (this.position.z > 25 || this.position.y < -7 || this.life > this.maxLife) {
+                if (this.position.z > 25 || this.position.y < 2 || this.life > this.maxLife) {
                     this.reset();
                 }
             }
@@ -266,10 +301,27 @@
 
         // Initialize the application
         function init() {
-            // Create scene
+            // Initialize main logo scene
+            initMainScene();
+            
+            // Initialize separate shooting stars scene
+            initStarsScene();
+            
+            // Setup vaporwave overlay
+            setupVaporwaveCanvas();
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation loop
+            animate();
+        }
+
+        function initMainScene() {
+            // Create main scene for logo
             scene = new THREE.Scene();
             
-            // Create camera
+            // Create camera for main scene
             const fov = 45;
             const aspect = window.innerWidth / window.innerHeight;
             const near = 0.1;
@@ -277,11 +329,11 @@
             camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
             camera.position.set(0, 5, 15);
             
-            // Create renderer
+            // Create renderer for main scene
             const canvas = document.getElementById('webgl-canvas');
-            renderer = new THREE.WebGLRenderer({ 
+            renderer = new THREE.WebGLRenderer({
                 canvas: canvas,
-                antialias: true, 
+                antialias: true,
                 alpha: true,
                 premultipliedAlpha: false
             });
@@ -290,7 +342,7 @@
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
-            // Setup OrbitControls
+            // Setup OrbitControls for main scene only
             controls = new THREE.OrbitControls(camera, canvas);
             controls.target.set(0, 0, 0);
             controls.enableDamping = true;
@@ -322,36 +374,51 @@
                 createLogoAndGlass(texture);
                 hideLoading();
             });
+        }
+
+        function initStarsScene() {
+            // Create separate scene for shooting stars
+            starsScene = new THREE.Scene();
             
-            // Create shooting stars
+            // Create fixed camera for stars (not affected by mouse controls)
+            const fov = 45;
+            const aspect = window.innerWidth / window.innerHeight;
+            const near = 0.1;
+            const far = 1000;
+            starsCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+            starsCamera.position.set(0, 5, 15); // Same position as main camera
+            
+            // Create separate renderer for stars
+            const starsCanvas = document.getElementById('shooting-stars-canvas');
+            starsRenderer = new THREE.WebGLRenderer({
+                canvas: starsCanvas,
+                antialias: false,  // Less antialiasing for performance
+                alpha: true,
+                premultipliedAlpha: false
+            });
+            starsRenderer.setSize(window.innerWidth, window.innerHeight);
+            starsRenderer.setClearColor(0x000000, 0); // Transparent background
+            
+            // Create shooting stars in the stars scene
             for (let i = 0; i < 5; i++) {
                 shootingStars.push(new ShootingStar());
             }
             console.log('🌠 Shooting stars created:', shootingStars.length);
-            
-            // Setup vaporwave overlay
-            setupVaporwaveCanvas();
-            
-            // Handle window resize
-            window.addEventListener('resize', onWindowResize);
-            
-            // Start animation loop
-            animate();
         }
 
         function createLogoAndGlass(logoTexture) {
-            // Create glass plate geometry and material
+            // Create glass plate geometry and material with light grey effect
             const glassGeometry = new THREE.PlaneGeometry(8, 6);
             const glassMaterial = new THREE.MeshPhysicalMaterial({
                 transparent: true,
-                opacity: 0.15,
-                roughness: 0.05,
-                metalness: 0.0,
-                reflectivity: 0.9,
+                opacity: 0.4,          // 60% transparency = 40% opacity for better visibility
+                roughness: 0.1,        // Slightly rougher for metallic effect
+                metalness: 0.8,        // High metalness for metallic appearance
+                reflectivity: 0.95,    // High reflectivity for shiny appearance
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.0,
                 side: THREE.DoubleSide,
-                color: 0xffffff
+                color: 0xf0f0f0        // Much lighter grey color (almost white-grey)
             });
             
             glassPlateMesh = new THREE.Mesh(glassGeometry, glassMaterial);
@@ -436,7 +503,7 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            // Update controls
+            // Update controls for main scene
             controls.update();
             
             // Rotate logo group slowly
@@ -450,17 +517,33 @@
             // Update vaporwave effect
             updateVaporwaveEffect();
             
-            // Render scene
+            // Render main scene (logo)
             renderer.render(scene, camera);
+            
+            // Render stars scene (independent, no mouse control)
+            if (starsRenderer && starsScene && starsCamera) {
+                starsRenderer.render(starsScene, starsCamera);
+            }
         }
 
         function onWindowResize() {
-            // Update camera
+            // Update main camera
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             
-            // Update renderer
+            // Update main renderer
             renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Update stars camera
+            if (starsCamera) {
+                starsCamera.aspect = window.innerWidth / window.innerHeight;
+                starsCamera.updateProjectionMatrix();
+            }
+            
+            // Update stars renderer
+            if (starsRenderer) {
+                starsRenderer.setSize(window.innerWidth, window.innerHeight);
+            }
             
             // Update vaporwave canvas
             vaporwaveCanvas.width = window.innerWidth;

@@ -7,7 +7,7 @@ Under the rotating AWS logo and rotating with it, place an hardcoded AMZN stock 
 
 You will make sure that:
 - The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)
-- The shooting stars and vapor element 3D scene is independent to the Logo&AMZN stock one (so not subject to mouse control)
+- The shooting stars and vaporware 3D WebGL canvas are independents to the Logo&AMZN stock one (so not subject to mouse control)
 - The shooting stars are small white-colored lines with variable alpha channel depending on distance (i.e. think shooting stars entering the atmosphere and becoming brighter as they go above the camera)
 - Make sure that shooting stars come from a plane few pixels above the background horizon line and flow quickly across the blue sky toward a vanishing virtual point above and behind the camera (At design time, you will need to oepn and analyze the generated Nova Canvas image to locate the polygon of the blue sky area)
 - Make sure vaporware elements are randomly appearing as animated shaded vertical lines coming from the generated image near ground. The shaded lines are always a gradient fully transparent at the bottom then becoming semi-transparent (each line had a randomly selected target transparency) 
