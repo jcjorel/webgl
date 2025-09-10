@@ -3,7 +3,7 @@ Create a single Web page containing a WebGL micro application that makes the sup
 The clear sky must be animated with realistic shooting stars/meteor shower effect. 
 Some vaporwave elements must be added to the scene close the camera.
 
-Under the rotating AWS logo and rotating with it, place an hardcoded AMZN stock value in $ (fetch today stock value as the hardcoded value).
+Under the rotating AWS logo and rotating with it, place an **hardcoded** AMZN stock value in $ (fetch today stock value as the hardcoded value).
 
 You will make sure that:
 - The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)
