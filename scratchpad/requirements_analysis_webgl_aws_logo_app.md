@@ -161,6 +161,8 @@ TC-011: The system SHALL implement vaporwave bubbles with ground-hugging physics
 
 TC-012: The system SHALL implement smooth vaporwave bubble growth animation using easing functions to create natural motion from minimized initial state to final calculated diameter.
 
+TC-013: The system SHALL configure the Python HTTP server to return HTTP Cache-Control header with value "no-cache" for all served content.
+
 ### Business Constraints
 BC-001: The hardcoded AMZN stock value SHALL be the current market value fetched via Perplexity MCP Server at build-time and then hardcoded into the application.
 
@@ -265,7 +267,8 @@ AC-17: Vaporwave aesthetic standards are met with neon color implementation (mag
 | **Technical Constraints** | | |
 | TC-001 | Line 16: "Use Three.js framework" | AC-01, AC-12 |
 | TC-002 | Line 24: "Context7 MCP server for right usage...of latest version of Three.js and OrbitControl" | AC-03 |
-| TC-003 | Line 17: "Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option)" | AC-11 |
+| TC-003 | Line 17: "Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option and returning HTTP Cache-Control header with value no-cache)" | AC-11 |
+| TC-013 | Line 17: "returning HTTP Cache-Control header with value no-cache" | AC-11 |
 | TC-004 | Line 9: "The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)" | AC-09 |
 | TC-005 | Line 10: "The shooting stars and vaporware 3D WebGL canvas are independents to the Logo&AMZN stock one (so not subject to mouse control)" | AC-10 |
 | TC-006 | Line 11: "The shooting stars are small white-colored lines with variable alpha channel" (Derived WebGL requirement) | AC-05 |
@@ -293,6 +296,8 @@ AC-17: Vaporwave aesthetic standards are met with neon color implementation (mag
 | A-002 | Line 16: "Use Three.js framework" (Derived WebGL assumption) | AC-01 |
 | A-003 | Line 19: "Design it for Chrome latest version browser" (Derived compatibility assumption) | AC-01 |
 | A-004 | Line 17: "Use a python simple http server" (Derived server assumption) | AC-11 |
+| A-005 | Line 1: "with optional mouse control" (Assumption that mouse controls are optional functionality) | AC-03 |
+| A-006 | Line 25: "AWS Nova canvas MCP server to generate images" (Assumption that background is pre-generated at build-time) | AC-04 |
 | **Dependencies** | | |
 | D-001 | Line 16: "Use Three.js framework" | AC-01 |
 | D-002 | Line 24: "Context7 MCP server for right usage...of latest version of Three.js and OrbitControl" | AC-03 |
