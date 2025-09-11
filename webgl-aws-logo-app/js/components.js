@@ -595,9 +595,16 @@ class VaporwaveLines {
         // Create mesh for the vertical line
         const mesh = new THREE.Mesh(geometry, material);
         
+        // Calculate ground level position based on scene layout
+        // Camera is at y=0, stock display is at y=-2.5, so ground level is at y=-3.5
+        const groundLevel = -3.5;
+        
         // FIXED: Position lines starting from ground level (FR-011)
+        // Offset by half height so bottom of line touches ground, not center
+        const yPosition = groundLevel + (scaledHeight / 2);
+        
         mesh.position.x = x;
-        mesh.position.y = 0; // FIXED: Center at ground level so lines extend upward
+        mesh.position.y = yPosition;
         mesh.position.z = z;
 
         const line = {
