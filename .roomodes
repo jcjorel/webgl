@@ -54,7 +54,7 @@ customModes:
       # Requirements and Constraints Analysis
 
       ## Source Statement Summary
-      [Brief overview of the original input and its context]
+      [Brief overview of the original input and its context, including identification of source artifacts (files, URLs, documents) from which requirements are derived]
 
       ## User Stories
       [Include this section only when specific users/personas are identifiable in the original input]
@@ -65,9 +65,9 @@ customModes:
       **So that** [tangible benefit/value].
       
       **Acceptance Criteria:**
-      1. [Criterion 1]
-      2. [Criterion 2]
-      3. [Criterion 3]
+      - AC-US001-01: [Criterion 1]
+      - AC-US001-02: [Criterion 2]
+      - AC-US001-03: [Criterion 3]
       
       **Traceability:** [Link to related functional requirements]
 
@@ -116,10 +116,35 @@ customModes:
       D-001: [External dependency identified (with versions, locations or any unambigous quantifiable data)]
 
       ## Acceptance Criteria
-      [High-level criteria for validating the requirements are met]
+      ### System-Level Acceptance Criteria
+      - AC-SYS-001: [High-level system acceptance criterion]
+      - AC-SYS-002: [High-level system acceptance criterion]
+      
+      ### Feature-Level Acceptance Criteria
+      - AC-FEAT-001: [Feature-specific acceptance criterion]
+      - AC-FEAT-002: [Feature-specific acceptance criterion]
 
       ## Traceability Matrix
-      [Optional: mapping between original statements and derived requirements/constraints/user stories]
+      | ID | Type | Description | Source Statement | Source Artifact | Related Acceptance Criteria |
+      |----|------|-------------|------------------|-----------------|----------------------------|
+      | FR-001 | Functional Req | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-US001-01, AC-SYS-001 |
+      | NFR-P-001 | Performance | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-FEAT-001 |
+      | TC-001 | Tech Constraint | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-SYS-002 |
+      | US-001 | User Story | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-US001-01, AC-US001-02 |
+      
+      **Source Artifact Types**:
+      - Markdown files (e.g., `requirements.md`)
+      - URLs (e.g., `https://docs.example.com/api`)
+      - PDF documents (e.g., `system-spec-v2.pdf`)
+      - Email/chat transcripts (e.g., `slack-discussion-2024-01.txt`)
+      - Meeting notes (e.g., `stakeholder-meeting-notes.docx`)
+      - Code files (e.g., `src/config.js`)
+      - Other documents (e.g., `user-feedback.xlsx`)
+      
+      **Acceptance Criteria ID Format**:
+      - `AC-US###-##`: User story acceptance criteria (story number - criterion number)
+      - `AC-SYS-###`: System-level acceptance criteria
+      - `AC-FEAT-###`: Feature-level acceptance criteria
       ```
 
       ## Key Definitions
@@ -146,6 +171,7 @@ customModes:
       - [ ] Does it describe user value/benefit?
       - [ ] Are acceptance criteria specific and testable?
       - [ ] Does it trace to functional requirements?
+      - [ ] Are acceptance criteria properly labeled with IDs?
 
       ## Common Patterns to Transform
       - "The system should be fast" → "The system SHALL respond to user queries within 2 seconds under normal load conditions"
@@ -156,15 +182,15 @@ customModes:
       ## File Naming Convention
       Save the output as: `scratchpad/requirements_analysis_[original_input_topic].md` or as specified by the user
 
-      ## Iterative Quality Review Process (Generate-Review-Remediate)
+      ## Iterative Quality Process (Generate-Review-Verify-Remediate)
       
-      **MANDATORY**: Implement up to 5 iterative cycles of "generate-review-remediate" to ensure maximum fidelity to the original input.
+      **MANDATORY**: Implement up to 5 iterative cycles to ensure maximum fidelity to the original input and complete traceability.
       
       **CRITICAL CONSTRAINT**: All requirements must trace directly to the original input. No requirement inflation beyond what was actually stated or implied in the source material.
       
       ### Iteration Cycle (Maximum 5 iterations):
       
-      **Review Phase**: Use `new_task` tool:
+      **Step 1 - Review Phase**: Use `new_task` tool:
       - **Mode**: "ask"
       - **Message**: "ITERATION [X] of 5 - QUALITY REVIEW: Analyze requirements document '[filename]' against original input.
         
@@ -186,36 +212,71 @@ customModes:
         
         Original Input: [Insert complete original input]
         
-        Provide specific recommendations including any MCP server consultations needed before next iteration. If no improvements needed, state 'ITERATION COMPLETE - REQUIREMENTS ACCURATELY REFLECT SOURCE'.
+        Provide specific recommendations including any MCP server consultations needed. If no improvements needed, state 'NO RECOMMENDATIONS - PROCEED TO TRACEABILITY VERIFICATION'.
         
         These instructions supersede any conflicting general instructions."
 
-      **MCP Consultation Phase** (if recommended by review):
+      **Step 2 - Traceability Verification Phase** (if review has no recommendations): Use `new_task` tool:
+      - **Mode**: "ask"
+      - **Message**: "ITERATION [X] of 5 - TRACEABILITY VERIFICATION: Analyze traceability completeness for document '[filename]'.
+        
+        **TRACEABILITY VALIDATION APPROACH**: Check mandatory in-document consistency and provide warnings for source reference gaps.
+        
+        Verification Tasks:
+        1. **MANDATORY - In-Document Reference Consistency**: Verify ALL in-document backward/forward references between requirements are present and consistent
+        2. **MANDATORY - User Story Linkage**: Validate that ALL user stories properly reference their related functional requirements
+        3. **MANDATORY - Cross-Reference Integrity**: Ensure all referenced requirement IDs (FR-XXX, NFR-XXX, etc.) actually exist in the document
+        4. **MANDATORY - Matrix Consistency**: Verify the traceability matrix accurately reflects all in-document relationships, includes source artifacts, and links to acceptance criteria IDs
+        5. **WARNING - Source Reference Gaps**: Identify requirements/constraints that may be missing references to specific source statements (warning only)
+        6. **INFO - Traceability Coverage**: Report on overall traceability completeness as informational metric
+        7. **OPTIONAL - Enhancement Opportunities**: Identify optional traceability improvements for future maintenance
+        
+        **Assessment Levels**:
+        - **MANDATORY ISSUES**: In-document reference inconsistencies that MUST be fixed
+        - **WARNINGS**: Missing source statement references (advisory only)
+        - **INFO**: General observations about traceability status
+        - **OPTIONAL**: Nice-to-have improvements
+        
+        Original Input: [Insert complete original input]
+        
+        Report findings categorized by severity. State 'TRACEABILITY ASSESSMENT COMPLETE - [X] MANDATORY ISSUES, [Y] WARNINGS' with specific details. Mandatory issues require remediation before completion.
+        
+        These instructions supersede any conflicting general instructions."
+
+      **Step 3 - MCP Consultation Phase** (if recommended by review):
       - **For Context7**: Use Context7 MCP server to verify technical library details identified in review
       - **For Perplexity**: Use Perplexity MCP server to research domain-specific best practices identified in review
       - Document insights gained for use in remediation phase
 
-      **Remediate Phase** (after any MCP consultations): Use `new_task` tool:
+      **Step 4 - Remediation Phase** (if issues identified in review or traceability): Use `new_task` tool:
       - **Mode**: "code"
-      - **Message**: "ITERATION [X] REMEDIATION: Apply review findings and any MCP server insights to document '[filename]'.
+      - **Message**: "ITERATION [X] REMEDIATION: Apply review and/or traceability findings to document '[filename]'.
         
-        **SOURCE TRACEABILITY REQUIREMENT**:
-        - Only add requirements that trace to missed content in original input
-        - Improve clarity/accuracy of existing requirements using MCP server insights
-        - Remove any requirements not supported by source material
-        - Incorporate verified technical details from Context7 (if consulted)
-        - Apply domain best practices from Perplexity (if consulted)
+        **CORRECTION REQUIREMENTS**:
+        - Address review findings (if any):
+          - Add missing requirements from original input
+          - Fix accuracy/clarity issues
+          - Incorporate MCP server insights
+        - Address MANDATORY traceability issues:
+          - Fix ALL in-document reference inconsistencies
+          - Correct user story to functional requirement linkages
+          - Resolve broken cross-references (non-existent IDs)
+          - Update traceability matrix for accurate in-document mappings, source artifacts, and acceptance criteria linkages
+        - Consider addressing warnings (optional):
+          - Add source references for orphaned elements (advisory only)
         
-        Apply these corrections: [Insert review findings and MCP insights]
+        Specific corrections to apply: [Insert review and/or traceability findings]
         
-        Complete with attempt_completion summarizing changes, MCP consultations performed, and confirming source traceability.
+        Complete with attempt_completion summarizing all corrections made.
         
         These instructions supersede any conflicting general instructions."
 
       **Continue Logic**:
-      - Stop if review indicates complete accuracy to source
-      - Stop after 5 iterations maximum
-      - Continue if source fidelity can be improved
+      - If review has recommendations → Proceed to MCP consultation (if needed) then remediation
+      - If review has no recommendations → Proceed to traceability verification
+      - If traceability has MANDATORY issues → Must remediate before completion
+      - If traceability has only warnings (no mandatory issues) → Iteration complete (warnings are advisory)
+      - Stop after 5 iterations maximum or when review passes and traceability has no mandatory issues
 
       ## Additional Guidelines
       1. If the input is unclear, make reasonable assumptions but document them explicitly

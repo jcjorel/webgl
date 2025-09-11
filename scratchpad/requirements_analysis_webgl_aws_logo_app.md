@@ -58,7 +58,7 @@ The source document describes a WebGL micro application for creating a single we
 5. Application targets Chrome latest version compatibility
 6. Implementation follows KISS design principle
 
-**Traceability:** FR-001, TC-001, TC-002, TC-003, NFR-P-001, NFR-U-001, NFR-M-001
+**Traceability:** FR-001, TC-001, TC-002, TC-003, NFR-P-001, NFR-U-001, NFR-M-001, NFR-M-002
 
 ### Story US-005: Validate Application Performance and Functionality
 **As a** QA tester,
@@ -225,28 +225,69 @@ D-008: Perplexity MCP server for technical research and current information.
 17. Vaporwave aesthetic standards are met with neon color implementation (magenta, cyan, electric blue) and shader-based gradient effects
 
 ## Traceability Matrix
-| Requirement ID | Source Statement Reference | Acceptance Criteria |
-|---------------|---------------------------|-------------------|
-| FR-001 | "WebGL micro application for creating a single web page" | AC-1 |
-| FR-002 | "AWS logo rotating on a 3D glass pane" | AC-2, AC-3 |
-| FR-003 | "with mouse controls" | AC-3 |
-| FR-004 | "animated desert night scene" | AC-4 |
-| FR-005 | "with shooting stars" | AC-5 |
-| FR-006 | "and vaporwave elements" | AC-6 |
-| FR-007 | "hardcoded AMZN stock value display" | AC-7 |
-| FR-008 | "stock value display" (implied rotation) | AC-7 |
-| FR-009 | "small white-colored lines with variable alpha channel based on distance simulation" | AC-5 |
-| FR-010 | "trajectories from a plane few pixels above the background horizon line flowing quickly across the sky toward a vanishing virtual point above and behind the camera" | AC-5 |
-| FR-011 | "randomly appearing animated shaded vertical lines originating from the generated image near ground level" | AC-6 |
-| FR-012 | "gradients that are fully transparent at the bottom and transition to semi-transparent with randomly selected target transparency and display duration" | AC-6 |
-| FR-013 | "if a vaporwave line is far away from the camera it must be thinner and smaller than a vaporwave line close to the camera" | AC-13 |
-| FR-014 | "for a vaporwave line very close to the camera, it must not exceed 33% of the screen height" | AC-14 |
-| FR-015 | "vaporwave lines to spread randomly behind the AWS logo, never appearing in front" (UPDATED: Fixed z-ordering issue) | AC-6, AC-13 |
-| FR-016 | "To test the solution, you will use the browser tool and will leverage the Chrome Developer tool logs" | AC-15 |
-| TC-001 | "Three.js framework" | AC-1, AC-11 |
-| TC-004 | "background image as fixed (not rotating with the logo or subject to mouse control)" | AC-8 |
-| TC-005 | "shooting stars and vaporwave 3D WebGL canvas as independent elements not subject to mouse control" | AC-9 |
-| BC-001 | "fetch today stock value as the hardcoded value", MCP verification ($230.34) | AC-7 |
-| DC-004 | "CRITICAL: Stick to the requirements. Do not inflate them during your processing!" | All ACs |
-| TC-011 | "vaporwave elements" (enhanced with Context7/Perplexity MCP insights) | AC-16, AC-17 |
-| TC-012 | "z-depth calculations" (enhanced with Context7 MCP insights) | AC-16 |
+| Requirement ID | Source Statement Reference (from WORK_TODO.md) | Acceptance Criteria |
+|---------------|------------------------------------------------|-------------------|
+| **Functional Requirements** | | |
+| FR-001 | Line 1: "Create a single Web page containing a WebGL micro application" | AC-1 |
+| FR-002 | Line 1: "supplied AWS image PNG slowly rotating on a glossy glass 3D pane" | AC-2 |
+| FR-003 | Line 1: "with optional mouse control" | AC-3 |
+| FR-004 | Line 1: "Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti)" | AC-4 |
+| FR-005 | Line 3: "The clear sky must be animated with realistic shooting stars/meteor shower effect" | AC-5 |
+| FR-006 | Line 4: "Some vaporwave elements must be added to the scene close the camera" | AC-6 |
+| FR-007 | Line 6: "place an **hardcoded (i.e. not real-time)** AMZN stock value in $" | AC-7 |
+| FR-008 | Line 6: "Under the rotating AWS logo and rotating with it" | AC-7 |
+| FR-009 | Line 11: "The shooting stars are small white-colored lines with variable alpha channel depending on distance" | AC-5 |
+| FR-010 | Line 12: "shooting stars come from a plane few pixels above the background horizon line and flow quickly across the sky toward a vanishing virtual point above and behind the camera" | AC-5 |
+| FR-011 | Line 13: "vaporware elements are randomly appearing as animated shaded vertical lines coming from the generated image near ground" | AC-6 |
+| FR-012 | Line 13: "The shaded lines are always a gradient fully transparent at the bottom then becoming semi-transparent (each line has a randomly selected target transparency and display duration)" | AC-6 |
+| FR-013 | `<unknown>` (Derived from vaporwave perspective requirements) | AC-13 |
+| FR-014 | `<unknown>` (Derived from vaporwave height constraints) | AC-14 |
+| FR-015 | `<unknown>` (Derived from vaporwave z-ordering requirements) | AC-6, AC-13 |
+| FR-016 | Line 21: "To test the solution, you will use the browser tool and will leverage the Chrome Developper tool logs" | AC-15 |
+| **Non-Functional Requirements** | | |
+| NFR-P-001 | Line 18: "Background image must fit automatically the web page size (real image size 1920x1088)" | AC-11 |
+| NFR-P-002 | `<unknown>` (Derived from smooth animation requirement) | AC-11 |
+| NFR-U-001 | Line 19: "Design it for Chrome latest version browser" | AC-1 |
+| NFR-U-002 | Line 1: "with optional mouse control" + Line 24: "Context7 MCP server for right usage...of latest version of Three.js and OrbitControl" | AC-3 |
+| NFR-R-001 | Line 17: "Use a python simple http server to serve the web page" | AC-10 |
+| NFR-M-001 | Line 28: "Make it KISS!" | All ACs |
+| NFR-M-002 | Line 10: "The shooting stars and vaporware 3D WebGL canvas are independents to the Logo&AMZN stock one" | AC-8, AC-9 |
+| **Technical Constraints** | | |
+| TC-001 | Line 16: "Use Three.js framework" | AC-1, AC-11 |
+| TC-002 | Line 24: "Context7 MCP server for right usage...of latest version of Three.js and OrbitControl" | AC-3 |
+| TC-003 | Line 17: "Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option)" | AC-10 |
+| TC-004 | Line 9: "The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)" | AC-8 |
+| TC-005 | Line 10: "The shooting stars and vaporware 3D WebGL canvas are independents to the Logo&AMZN stock one (so not subject to mouse control)" | AC-9 |
+| TC-006 | `<unknown>` (Derived from WebGL rendering requirements) | AC-5 |
+| TC-007 | `<unknown>` (Derived from glass material implementation) | AC-2 |
+| TC-008 | `<unknown>` (Derived from particle system implementation) | AC-5 |
+| TC-009 | `<unknown>` (Derived from Three.js rendering setup) | AC-1, AC-11 |
+| TC-010 | `<unknown>` (Derived from vaporwave perspective implementation) | AC-13, AC-16 |
+| TC-011 | `<unknown>` (Derived from vaporwave aesthetic implementation) | AC-16, AC-17 |
+| TC-012 | `<unknown>` (Derived from z-depth calculation requirements) | AC-16 |
+| **Business Constraints** | | |
+| BC-001 | Line 6: "fetch today stock value as the hardcoded value" + Line 23: "Perplexity MCP Server to fetch the current AMZN stock value" | AC-7 |
+| BC-002 | Line 6: "**hardcoded (i.e. not real-time)**" | AC-7 |
+| **Design Constraints** | | |
+| DC-001 | Line 12: "**Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the polygon of the sky area" | AC-5 |
+| DC-002 | Line 1: "(w/o cacti)" | AC-4 |
+| DC-003 | Line 4: "Some vaporwave elements must be added to the scene close the camera" | AC-6, AC-17 |
+| DC-004 | Line 30: "CRITICAL: Stick to the requirements. Do not inflate them during your processing!" | All ACs |
+| **Resource Constraints** | | |
+| RSC-001 | Lines 23-25: "Perplexity MCP Server...Context7 MCP server...AWS Nova canvas MCP server" | AC-1 |
+| RSC-002 | Line 26: "IMPORTANT: If you encounter integration issues with Three.js or OrbitControl, leverage Context7 & Perplexity to enrich your reasoning" | AC-1, AC-11 |
+| RSC-003 | Line 32: "Ask questions" | AC-1 |
+| **Assumptions** | | |
+| A-001 | `<unknown>` (Derived from AWS logo availability) | AC-2 |
+| A-002 | `<unknown>` (Derived from WebGL support requirement) | AC-1 |
+| A-003 | `<unknown>` (Derived from Chrome browser compatibility) | AC-1 |
+| A-004 | `<unknown>` (Derived from Python server requirement) | AC-10 |
+| **Dependencies** | | |
+| D-001 | Line 16: "Use Three.js framework" | AC-1 |
+| D-002 | Line 24: "Context7 MCP server for right usage...of latest version of Three.js and OrbitControl" | AC-3 |
+| D-003 | Line 1: "supplied AWS image PNG" | AC-2 |
+| D-004 | Line 17: "Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option)" | AC-10 |
+| D-005 | Line 19: "Design it for Chrome latest version browser" | AC-1, AC-15 |
+| D-006 | Line 25: "AWS Nova canvas MCP server to generate images" | AC-4 |
+| D-007 | Line 24: "Context7 MCP server for right usage (URLs, best-practices...) of latest version of Three.js and OrbitControl" | AC-1, AC-16, AC-17 |
+| D-008 | Line 23: "Perplexity MCP Server to fetch the current AMZN stock value" | AC-7 |
