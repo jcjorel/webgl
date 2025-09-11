@@ -3,6 +3,78 @@
 ## Source Statement Summary
 The source document describes a WebGL micro application for creating a single web page featuring an AWS logo rotating on a 3D glass pane with mouse controls, set against an animated desert night scene with shooting stars and vaporwave elements. The application uses Three.js framework and includes a hardcoded AMZN stock value display.
 
+## User Stories
+
+### Story US-001: Experience Interactive 3D AWS Logo Display
+**As a** website visitor,
+**I want to** view and interact with a rotating AWS logo on a glossy glass 3D pane using mouse controls,
+**So that** I can experience an engaging and interactive visualization of the AWS brand.
+
+**Acceptance Criteria:**
+1. The AWS logo displays on a realistic glass surface with transparency and clearcoat effects
+2. The logo rotates smoothly and continuously without user input
+3. Mouse controls allow me to orbit around, zoom, and pan the 3D scene
+4. The glass pane maintains realistic physical material properties during interaction
+
+**Traceability:** FR-002, FR-003, NFR-U-002
+
+### Story US-002: Enjoy Immersive Desert Night Scene
+**As a** website visitor,
+**I want to** experience an animated desert night scene with shooting stars and vaporwave elements,
+**So that** I can enjoy a visually captivating and atmospheric backdrop while viewing the AWS logo.
+
+**Acceptance Criteria:**
+1. The background displays a fixed desert night scene with clear sky and stars
+2. Fantastical colorful supernatural vegetation appears without cacti
+3. Realistic shooting stars animate across the sky from horizon to vanishing point
+4. Vaporwave elements appear as animated vertical gradient lines with proper depth perspective
+5. All background animations remain independent of mouse controls
+
+**Traceability:** FR-004, FR-005, FR-006, FR-009, FR-010, FR-011, FR-012, FR-013, FR-014, FR-015
+
+### Story US-003: Access Current AMZN Stock Information
+**As a** website visitor,
+**I want to** see the current AMZN stock value displayed under the rotating AWS logo,
+**So that** I can quickly access relevant financial information related to Amazon.
+
+**Acceptance Criteria:**
+1. The stock value displays exactly "$230.34 USD" as hardcoded text
+2. The stock value rotates together with the AWS logo
+3. The display remains clearly visible and readable throughout the rotation
+4. No real-time stock fetching occurs - value remains static
+
+**Traceability:** FR-007, FR-008, BC-001, BC-002
+
+### Story US-004: Build and Deploy WebGL Application
+**As a** developer,
+**I want to** implement the WebGL application using Three.js with specified technical requirements,
+**So that** I can deliver a functional interactive web experience that meets all specifications.
+
+**Acceptance Criteria:**
+1. Application uses Three.js framework with proper WebGL rendering
+2. OrbitControls provides mouse interaction functionality
+3. Python HTTP server serves the application on port 8054 with TCP reuse
+4. Background image automatically fits web page dimensions (1920x1088 source)
+5. Application targets Chrome latest version compatibility
+6. Implementation follows KISS design principle
+
+**Traceability:** FR-001, TC-001, TC-002, TC-003, NFR-P-001, NFR-U-001, NFR-M-001
+
+### Story US-005: Validate Application Performance and Functionality
+**As a** QA tester,
+**I want to** test the WebGL application using Chrome Developer tools,
+**So that** I can verify all features work correctly and performance meets requirements.
+
+**Acceptance Criteria:**
+1. Browser tool functionality validates console logs without critical errors
+2. All animations maintain smooth performance during testing
+3. Mouse controls respond appropriately without lag or glitches
+4. Shooting stars and vaporwave elements render independently as specified
+5. Chrome Developer tools show proper WebGL context and resource usage
+6. Application loads successfully and displays all elements correctly
+
+**Traceability:** FR-016, NFR-P-002, NFR-R-001
+
 ## Requirements
 
 ### Functional Requirements

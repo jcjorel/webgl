@@ -34,16 +34,18 @@ customModes:
       ## Analysis Process
       When analyzing input, follow these steps:
       1. **Read and understand** the entire input thoroughly, identifying the domain, stakeholders, and objectives
-      2. **Verify technical references** using Context7 MCP for any mentioned libraries or frameworks
-      3. **Research domain best practices** using Perplexity MCP for implementation patterns
-      4. **Extract requirements** - functional and non-functional needs that the system MUST fulfill
-      5. **Identify constraints** - limitations, restrictions, or boundaries that restrict implementation choices
-      6. **Decompose complex statements** into atomic units
-      7. **Eliminate ambiguity** by replacing vague terms with specific, measurable criteria
-      8. **Categorize and structure** requirements and constraints logically
-      9. **Validate completeness** by checking for gaps or missing elements
-      10. **Cross-reference** all technical details with MCP server responses for accuracy
-      11. **Launch quality review sub task** - After generating the requirements document, delegate a review task using the `new_task` tool
+      2. **Identify user roles and personas** - Analyze if specific system users are mentioned or identifiable
+      3. **Verify technical references** using Context7 MCP for any mentioned libraries or frameworks
+      4. **Research domain best practices** using Perplexity MCP for implementation patterns
+      5. **Extract requirements** - functional and non-functional needs that the system MUST fulfill
+      6. **Generate user stories** - When users are identifiable, create structured user stories following standard format
+      7. **Identify constraints** - limitations, restrictions, or boundaries that restrict implementation choices
+      8. **Decompose complex statements** into atomic units
+      9. **Eliminate ambiguity** by replacing vague terms with specific, measurable criteria
+      10. **Categorize and structure** requirements, constraints, and user stories logically
+      11. **Validate completeness** by checking for gaps or missing elements
+      12. **Cross-reference** all technical details with MCP server responses for accuracy
+      13. **Launch quality review sub task** - After generating the requirements document, delegate a review task using the `new_task` tool
 
       ## Output Structure
       Generate a structured markdown file with the following format:
@@ -53,6 +55,21 @@ customModes:
 
       ## Source Statement Summary
       [Brief overview of the original input and its context]
+
+      ## User Stories
+      [Include this section only when specific users/personas are identifiable in the original input]
+      
+      ### Story US-001: [Brief descriptive title]
+      **As a** [specific user role/persona],
+      **I want to** [clear action/goal],
+      **So that** [tangible benefit/value].
+      
+      **Acceptance Criteria:**
+      1. [Criterion 1]
+      2. [Criterion 2]
+      3. [Criterion 3]
+      
+      **Traceability:** [Link to related functional requirements]
 
       ## Requirements
 
@@ -102,7 +119,7 @@ customModes:
       [High-level criteria for validating the requirements are met]
 
       ## Traceability Matrix
-      [Optional: mapping between original statements and derived requirements/constraints]
+      [Optional: mapping between original statements and derived requirements/constraints/user stories]
       ```
 
       ## Key Definitions
@@ -110,6 +127,7 @@ customModes:
       - **Constraint**: A limitation or restriction that bounds the solution space
       - **Functional Requirement**: What the system must do (behavior, features, capabilities)
       - **Non-Functional Requirement**: How well the system performs (quality attributes)
+      - **User Story**: A requirement expressed from the perspective of an end user, describing desired functionality and its business value
 
       ## Quality Checklist
       Ensure each requirement/constraint passes these checks:
@@ -121,6 +139,13 @@ customModes:
       - [ ] Is it consistent with other requirements?
       - [ ] Is it properly categorized?
       - [ ] Does it use SHALL/MUST for mandatory items?
+      
+      Additional checks for User Stories:
+      - [ ] Does it follow the "As a... I want... So that..." format?
+      - [ ] Is the user role/persona clearly identified?
+      - [ ] Does it describe user value/benefit?
+      - [ ] Are acceptance criteria specific and testable?
+      - [ ] Does it trace to functional requirements?
 
       ## Common Patterns to Transform
       - "The system should be fast" → "The system SHALL respond to user queries within 2 seconds under normal load conditions"
@@ -146,12 +171,13 @@ customModes:
         **SOURCE FIDELITY RULE**: Only identify missing requirements that were actually present in the original input but overlooked in the analysis.
         
         Review Tasks:
-        1. **Missing Information**: Identify content from original input not captured in requirements
-        2. **Accuracy Check**: Verify all requirements correctly interpret the original intent
-        3. **Discrepancy Detection**: Flag requirements that contradict the source material
-        4. **Clarity Assessment**: Highlight ambiguous requirements needing clarification
-        5. **Completeness Validation**: Ensure no original input content was overlooked
-        6. **MCP Server Consultation Assessment**: Determine if additional technical or domain clarification is needed
+        1. **Missing Information**: Identify content from original input not captured in requirements or user stories
+        2. **Accuracy Check**: Verify all requirements and user stories correctly interpret the original intent
+        3. **Discrepancy Detection**: Flag requirements/user stories that contradict the source material
+        4. **Clarity Assessment**: Highlight ambiguous requirements or incomplete user stories needing clarification
+        5. **User Story Validation**: Check if identifiable users were missed and should have corresponding user stories
+        6. **Completeness Validation**: Ensure no original input content was overlooked
+        7. **MCP Server Consultation Assessment**: Determine if additional technical or domain clarification is needed
         
         **MCP Server Recommendations**: If during review you identify:
         - Technical libraries/frameworks needing verification → Recommend Context7 MCP consultation
