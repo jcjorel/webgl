@@ -84,12 +84,12 @@ const CONFIG = {
         MAX_LINES: 20,
         SPAWN_RATE: 0.1,
         LINE_WIDTH: 0.3, // FIXED: Base width - will be scaled by perspective
-        LINE_HEIGHT: 1.5, // FIXED: Reduced height by half as requested
+        LINE_HEIGHT: 1.95, // ENHANCED: Increased by 30% (was 1.5) for better visibility
         LIFETIME_RANGE: { min: 3000, max: 6000 },
         SPAWN_AREA: {
             X_RANGE: 20, // Wider spread for better distribution
-            Z_POSITION: -3, // FIXED: Position BEHIND AWS logo (Z=0) to prevent appearing in front
-            Z_RANGE: 6 // FIXED: Range from Z=-6 to Z=0, ensuring ALL vaporwave lines appear behind AWS logo
+            Z_POSITION: -6, // ENHANCED: Moved further back to increase depth range
+            Z_RANGE: 12 // ENHANCED: Doubled depth range (was 6) for better FoV coverage: Z=-12 to Z=0
         },
         COLORS: [
             0xFF00FF, // Magenta (vaporwave aesthetic)
