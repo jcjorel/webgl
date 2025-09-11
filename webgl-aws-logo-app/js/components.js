@@ -649,8 +649,10 @@ class VaporwaveLines {
      * @param {number} elapsedTime - Total elapsed time
      */
     update(deltaTime, elapsedTime) {
-        const spawnRoll = Math.random();
-        const shouldSpawn = spawnRoll < CONFIG.VAPORWAVE.SPAWN_RATE && this.lines.length < this.maxLines;
+        var frameCheckInterval = 120; // Check every 2 seconds at 60fps
+        
+        var spawnRoll = Math.random();
+        var shouldSpawn = spawnRoll < CONFIG.VAPORWAVE.SPAWN_RATE && this.lines.length < this.maxLines;
 
         // Spawn new lines randomly (FR-011: randomly appearing)
         if (shouldSpawn) {
@@ -658,13 +660,13 @@ class VaporwaveLines {
         }
 
         // Update existing lines
-        for (let i = this.lines.length - 1; i >= 0; i--) {
-            const line = this.lines[i];
+        for (var i = this.lines.length - 1; i >= 0; i--) {
+            var line = this.lines[i];
             line.age += deltaTime * 1000; // Convert to milliseconds
 
             // FIXED: Calculate fade based on age (FR-012: randomly selected display duration)
-            const lifeRatio = line.age / line.lifetime;
-            const alpha = line.initialAlpha * (1 - lifeRatio);
+            var lifeRatio = line.age / line.lifetime;
+            var alpha = line.initialAlpha * (1 - lifeRatio);
 
             // FIXED: Update shader uniform instead of material opacity
             if (line.material.uniforms && line.material.uniforms.uAlpha) {
@@ -678,20 +680,6 @@ class VaporwaveLines {
                 line.material.dispose();
                 this.lines.splice(i, 1);
             }
-        }
-
-        // [DEBUG] Enhanced logging to show perspective scaling fixes
-        if (this.lines.length > 0) {
-            const line = this.lines[0]; // Sample first line for debugging
-            console.log(`[DEBUG] VaporwaveLines: ${this.lines.length} active lines`);
-            console.log(`[DEBUG] Sample line position: x=${line.mesh.position.x.toFixed(2)}, y=${line.mesh.position.y.toFixed(2)}, z=${line.z.toFixed(2)}`);
-            
-            if (line.perspectiveScale) {
-                console.log(`[DEBUG] Perspective scale: width=${line.perspectiveScale.width.toFixed(3)}, height=${line.perspectiveScale.height.toFixed(3)}`);
-                console.log(`[DEBUG] Geometry size: width=${line.geometry.parameters.width.toFixed(3)}, height=${line.geometry.parameters.height.toFixed(3)}`);
-            }
-            
-            console.log(`[DEBUG] Sample line alpha: ${line.material.uniforms.uAlpha.value.toFixed(2)}, color: #${line.color.toString(16)}`);
         }
     }
 

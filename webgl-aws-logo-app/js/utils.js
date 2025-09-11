@@ -342,18 +342,18 @@ const Utils = {
 
         log: function(message, ...args) {
             if (this.enabled) {
-                console.log(`[DEBUG] ${message}`, ...args);
+                console.log(message, ...args);
             }
         },
 
         warn: function(message, ...args) {
             if (this.enabled) {
-                console.warn(`[DEBUG] ${message}`, ...args);
+                console.warn(message, ...args);
             }
         },
 
         error: function(message, ...args) {
-            console.error(`[DEBUG] ${message}`, ...args);
+            console.error(message, ...args);
         }
     },
 

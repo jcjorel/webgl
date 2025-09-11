@@ -338,18 +338,8 @@ class ControlsManager {
      */
     init() {
         try {
-            console.log('[DIAGNOSTIC] Checking OrbitControls availability...');
-            console.log('[DIAGNOSTIC] THREE object exists:', typeof THREE !== 'undefined');
-            console.log('[DIAGNOSTIC] THREE.OrbitControls exists:', typeof THREE.OrbitControls !== 'undefined');
-            console.log('[DIAGNOSTIC] window.OrbitControls exists:', typeof window.OrbitControls !== 'undefined');
-            console.log('[DIAGNOSTIC] OrbitControls in global scope:', typeof OrbitControls !== 'undefined');
-            
-            // Check what's available in THREE namespace
-            console.log('[DIAGNOSTIC] THREE keys:', Object.keys(THREE).filter(key => key.includes('Orbit')));
-            
             // Check if OrbitControls is available
             if (typeof THREE.OrbitControls === 'undefined') {
-                console.error('[DIAGNOSTIC] THREE.OrbitControls is undefined');
                 throw new Error('OrbitControls not loaded - THREE.OrbitControls is undefined');
             }
 
@@ -364,12 +354,6 @@ class ControlsManager {
 
         } catch (error) {
             console.error('✗ ControlsManager initialization failed:', error);
-            console.error('[DIAGNOSTIC] Error details:', {
-                message: error.message,
-                stack: error.stack,
-                threeExists: typeof THREE !== 'undefined',
-                orbitControlsExists: typeof THREE?.OrbitControls !== 'undefined'
-            });
             throw error;
         }
     }

@@ -197,9 +197,9 @@ class WebGLApp {
         this.components.vaporwaveLines = new VaporwaveLines();
         this.components.vaporwaveLines.init();
         
-        // FIXED: Add to MAIN scene instead of independent scene (FR-006: positioned between camera and AWS logo)
-        // This ensures vaporwave uses the same camera coordinate system as the logo
-        this.sceneManager.scene.add(this.components.vaporwaveLines.group);
+        // FIXED: Add vaporwave to INDEPENDENT scene (TC-005: not subject to mouse control)
+        // This ensures vaporwave elements remain independent from OrbitControls camera movements
+        this.sceneManager.independentScene.add(this.components.vaporwaveLines.group);
     }
 
     /**
