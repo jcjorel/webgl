@@ -35,7 +35,7 @@ FR-013: The system SHALL implement perspective scaling for vaporwave lines where
 
 FR-014: The system SHALL enforce height constraints for vaporwave lines such that lines closest to the camera SHALL NOT exceed 33% of the screen height.
 
-FR-015: The system SHALL distribute vaporwave lines randomly across the scene depth, with some lines appearing in front of the AWS logo and others appearing behind the AWS logo to create proper depth perception.
+FR-015: The system SHALL distribute vaporwave lines randomly across the scene depth behind the AWS logo, ensuring that vaporwave elements NEVER appear in front of the AWS logo but always render behind it to maintain proper visual hierarchy and depth perception.
 
 FR-016: The system SHALL be tested using browser tool functionality with Chrome Developer tools for console log verification and runtime error monitoring.
 
@@ -139,7 +139,7 @@ D-008: Perplexity MCP server for technical research and current information.
 3. Mouse controls allow interactive manipulation of the AWS logo view
 4. Background image displays a desert night scene with stars and supernatural vegetation (no cacti)
 5. Shooting stars animate realistically from horizon to vanishing point with proper alpha transparency
-6. Vaporwave elements appear as animated vertical gradient lines distributed randomly both in front of and behind the AWS logo with proper perspective scaling
+6. Vaporwave elements appear as animated vertical gradient lines distributed randomly behind the AWS logo with proper perspective scaling, never appearing in front of the AWS logo
 7. AMZN stock value "$230.34" displays under the AWS logo and rotates with it
 8. Background remains fixed during logo rotation and mouse interaction
 9. Shooting stars and vaporwave elements remain independent of mouse controls
@@ -169,7 +169,7 @@ D-008: Perplexity MCP server for technical research and current information.
 | FR-012 | "gradients that are fully transparent at the bottom and transition to semi-transparent with randomly selected target transparency and display duration" | AC-6 |
 | FR-013 | "if a vaporwave line is far away from the camera it must be thinner and smaller than a vaporwave line close to the camera" | AC-13 |
 | FR-014 | "for a vaporwave line very close to the camera, it must not exceed 33% of the screen height" | AC-14 |
-| FR-015 | "vaporwave line to spread randomly on the background image foreground (before and behind the AWS logo)" | AC-6, AC-13 |
+| FR-015 | "vaporwave lines to spread randomly behind the AWS logo, never appearing in front" (UPDATED: Fixed z-ordering issue) | AC-6, AC-13 |
 | FR-016 | "To test the solution, you will use the browser tool and will leverage the Chrome Developer tool logs" | AC-15 |
 | TC-001 | "Three.js framework" | AC-1, AC-11 |
 | TC-004 | "background image as fixed (not rotating with the logo or subject to mouse control)" | AC-8 |

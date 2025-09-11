@@ -88,8 +88,8 @@ const CONFIG = {
         LIFETIME_RANGE: { min: 3000, max: 6000 },
         SPAWN_AREA: {
             X_RANGE: 20, // Wider spread for better distribution
-            Z_POSITION: 3, // Position between main camera (Z=5) and AWS logo (Z=0) as per FR-006
-            Z_RANGE: 6 // FIXED: Larger depth range (Z=0 to Z=6) for proper foreground/background distribution
+            Z_POSITION: -3, // FIXED: Position BEHIND AWS logo (Z=0) to prevent appearing in front
+            Z_RANGE: 6 // FIXED: Range from Z=-6 to Z=0, ensuring ALL vaporwave lines appear behind AWS logo
         },
         COLORS: [
             0xFF00FF, // Magenta (vaporwave aesthetic)

@@ -575,6 +575,8 @@ class VaporwaveLines {
         const zRange = CONFIG.VAPORWAVE.SPAWN_AREA.Z_RANGE;
         const z = Utils.randomBetween(baseZ - zRange/2, baseZ + zRange/2);
 
+        // Z-ordering fix: All vaporwave lines now correctly positioned behind AWS logo (Z < 0)
+
         // FIXED: Calculate perspective scaling based on z-depth (FR-013, TC-010)
         const perspectiveScale = this.calculatePerspectiveScale(z);
         
