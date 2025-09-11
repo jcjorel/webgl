@@ -74,21 +74,57 @@ class GlassPane {
     }
 
     /**
-     * Create the glass material with physical properties
+     * Create the glass material with enhanced physical properties and environment mapping
      */
     createMaterial() {
         this.material = new THREE.MeshPhysicalMaterial({
             map: this.texture,
-            transmission: CONFIG.GLASS_PANE.MATERIAL.TRANSMISSION,
+            // FIXED: Reduced transmission for better visibility (was 0.9)
+            transmission: 0.6,
             opacity: CONFIG.GLASS_PANE.MATERIAL.OPACITY,
-            metalness: CONFIG.GLASS_PANE.MATERIAL.METALNESS,
-            roughness: CONFIG.GLASS_PANE.MATERIAL.ROUGHNESS,
+            // FIXED: Added metalness for metallic reflections (was 0)
+            metalness: 0.3,
+            // FIXED: Lower roughness for sharper reflections (was 0.1)
+            roughness: 0.05,
             ior: CONFIG.GLASS_PANE.MATERIAL.IOR,
             thickness: CONFIG.GLASS_PANE.MATERIAL.THICKNESS,
-            clearcoat: CONFIG.GLASS_PANE.MATERIAL.CLEARCOAT,
-            clearcoatRoughness: CONFIG.GLASS_PANE.MATERIAL.CLEARCOAT_ROUGHNESS,
+            // FIXED: Enhanced clearcoat for glass-like finish
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            // NEW: Environment mapping will be set asynchronously
+            envMapIntensity: 1.0,
             side: THREE.DoubleSide,
             transparent: true
+        });
+        
+        // FIXED: Create environment map after material is created
+        this.createEnvironmentMap();
+    }
+
+    /**
+     * Create environment map from background texture for reflections
+     */
+    createEnvironmentMap() {
+        // Load the background texture as environment map
+        const loader = new THREE.TextureLoader();
+        loader.load(CONFIG.ASSETS.BACKGROUND, (backgroundTexture) => {
+            // FIXED: Configure texture for proper environment mapping
+            backgroundTexture.mapping = THREE.EquirectangularReflectionMapping;
+            backgroundTexture.wrapS = THREE.RepeatWrapping;
+            backgroundTexture.wrapT = THREE.ClampToEdgeWrapping;
+            
+            // Set as environment map
+            this.envMap = backgroundTexture;
+            
+            // FIXED: Update material with environment map
+            if (this.material) {
+                this.material.envMap = this.envMap;
+                this.material.envMapIntensity = 1.0;
+                this.material.needsUpdate = true;
+                console.log('✓ Environment map applied to glass material');
+            }
+        }, undefined, (error) => {
+            console.warn('Could not load environment map:', error);
         });
     }
 
@@ -101,12 +137,13 @@ class GlassPane {
     }
 
     /**
-     * Dispose of resources
+     * Dispose of resources including environment map
      */
     dispose() {
         if (this.geometry) this.geometry.dispose();
         if (this.material) this.material.dispose();
         if (this.texture) this.texture.dispose();
+        if (this.envMap) this.envMap.dispose();
     }
 }
 

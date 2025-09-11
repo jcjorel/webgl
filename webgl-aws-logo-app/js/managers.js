@@ -95,6 +95,11 @@ class SceneManager {
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
 
+            // FIXED: Enhanced renderer configuration for realistic lighting
+            this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            this.renderer.toneMappingExposure = 1.5;
+            this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
             // Configure shadows
             if (CONFIG.RENDERER.SHADOW_MAP_ENABLED) {
                 this.renderer.shadowMap.enabled = true;
@@ -123,32 +128,47 @@ class SceneManager {
     }
 
     /**
-     * Setup scene lighting
+     * Setup enhanced scene lighting for proper glass reflection visibility
      */
     setupLights() {
-        // Ambient light for overall illumination
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        // FIXED: Enhanced ambient light for better overall visibility
+        const ambientLight = new THREE.AmbientLight(0x666666, 1.2);
         this.scene.add(ambientLight);
 
-        // Directional light for main illumination
-        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1.0);
+        // FIXED: Stronger directional light for main illumination
+        const directionalLight = new THREE.DirectionalLight(0xFFFFFF, 1.8);
         directionalLight.position.set(5, 10, 5);
         directionalLight.castShadow = true;
         
-        // Configure shadow properties
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
+        // Enhanced shadow properties for better quality
+        directionalLight.shadow.mapSize.width = 4096;
+        directionalLight.shadow.mapSize.height = 4096;
         directionalLight.shadow.camera.near = 0.1;
         directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.bias = -0.0001;
         
         this.scene.add(directionalLight);
 
-        // Point light for additional accent lighting
-        const pointLight = new THREE.PointLight(0x8080FF, 0.5, 30);
+        // FIXED: Stronger point light for glass highlighting
+        const pointLight = new THREE.PointLight(0x8080FF, 1.2, 30);
         pointLight.position.set(-5, 5, 5);
         this.scene.add(pointLight);
 
-        Utils.debug.log('Lights setup complete');
+        // NEW: Key light from the right for glass surface illumination
+        const keyLight = new THREE.DirectionalLight(0xFFE4B5, 0.8);
+        keyLight.position.set(-10, 8, 10);
+        this.scene.add(keyLight);
+
+        // NEW: Rim light from behind for glass edge highlighting
+        const rimLight = new THREE.DirectionalLight(0xB8860B, 0.6);
+        rimLight.position.set(0, 5, -10);
+        this.scene.add(rimLight);
+
+        // NEW: Hemisphere light for natural sky/ground lighting
+        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0xD2B48C, 0.4);
+        this.scene.add(hemisphereLight);
+
+        Utils.debug.log('Enhanced lights setup complete');
     }
 
     /**
