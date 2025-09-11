@@ -562,6 +562,7 @@ class VaporwaveLines {
 
     /**
      * Create a new vaporwave line with proper gradient implementation and perspective scaling
+     * FR-016: Lines start minimized and grow smoothly to full size
      * @returns {object} Line object
      */
     createLine() {
@@ -582,10 +583,13 @@ class VaporwaveLines {
         
         // FIXED: Apply perspective scaling to line dimensions
         const scaledWidth = CONFIG.VAPORWAVE.LINE_WIDTH * perspectiveScale.width;
-        const scaledHeight = CONFIG.VAPORWAVE.LINE_HEIGHT * perspectiveScale.height;
+        const targetHeight = CONFIG.VAPORWAVE.LINE_HEIGHT * perspectiveScale.height; // FR-016: This is the target height
+        
+        // FR-016: Start with minimal height that will grow to target height
+        const startHeight = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT;
 
-        // FIXED: Create geometry with perspective-scaled dimensions
-        const geometry = new THREE.PlaneGeometry(scaledWidth, scaledHeight);
+        // Create geometry with minimal height initially (FR-016)
+        const geometry = new THREE.PlaneGeometry(scaledWidth, startHeight);
         
         // FIXED: Clone gradient material and set unique color/alpha per FR-012
         const material = this.gradientMaterial.clone();
@@ -599,9 +603,9 @@ class VaporwaveLines {
         // Camera is at y=0, stock display is at y=-2.5, so ground level is at y=-3.5
         const groundLevel = -3.5;
         
-        // FIXED: Position lines starting from ground level (FR-011)
-        // Offset by half height so bottom of line touches ground, not center
-        const yPosition = groundLevel + (scaledHeight / 2);
+        // FR-016: Position lines starting from ground level with minimal height
+        // Offset by half of current height so bottom of line touches ground
+        const yPosition = groundLevel + (startHeight / 2);
         
         mesh.position.x = x;
         mesh.position.y = yPosition;
@@ -617,7 +621,14 @@ class VaporwaveLines {
             color: color,
             z: z, // Store z for debugging
             perspectiveScale: perspectiveScale, // Store scale for debugging
-            id: Math.random().toString(36).substring(2, 8)
+            id: Math.random().toString(36).substring(2, 8),
+            // FR-016, TC-013: Growth animation properties
+            currentHeight: startHeight,
+            targetHeight: targetHeight,
+            growthProgress: 0, // Progress from 0 to 1
+            growthDuration: CONFIG.VAPORWAVE.GROWTH_ANIMATION.DURATION,
+            groundLevel: groundLevel,
+            scaledWidth: scaledWidth
         };
 
         this.lines.push(line);
@@ -653,7 +664,7 @@ class VaporwaveLines {
     }
 
     /**
-     * Update vaporwave lines with proper shader uniform updates (FR-012)
+     * Update vaporwave lines with proper shader uniform updates (FR-012) and growth animation (FR-016)
      * @param {number} deltaTime - Time since last frame
      * @param {number} elapsedTime - Total elapsed time
      */
@@ -672,6 +683,27 @@ class VaporwaveLines {
         for (var i = this.lines.length - 1; i >= 0; i--) {
             var line = this.lines[i];
             line.age += deltaTime * 1000; // Convert to milliseconds
+
+            // FR-016: Update growth animation (TC-013: using easing functions)
+            if (line.growthProgress < 1) {
+                // Calculate progress (0 to 1)
+                line.growthProgress = Math.min(1, line.age / line.growthDuration);
+                
+                // Apply easing function for smooth growth (TC-013)
+                var easedProgress = Utils.easing[CONFIG.VAPORWAVE.GROWTH_ANIMATION.EASING_FUNCTION](line.growthProgress);
+                
+                // Calculate current height based on eased progress
+                line.currentHeight = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT +
+                    (line.targetHeight - CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT) * easedProgress;
+                
+                // Update geometry to reflect new height
+                line.geometry.dispose(); // Dispose old geometry
+                line.geometry = new THREE.PlaneGeometry(line.scaledWidth, line.currentHeight);
+                line.mesh.geometry = line.geometry;
+                
+                // Update Y position to keep bottom at ground level
+                line.mesh.position.y = line.groundLevel + (line.currentHeight / 2);
+            }
 
             // FIXED: Calculate fade based on age (FR-012: randomly selected display duration)
             var lifeRatio = line.age / line.lifetime;

@@ -81,8 +81,8 @@ const CONFIG = {
 
     // Vaporwave Lines Configuration
     VAPORWAVE: {
-        MAX_LINES: 20,
-        SPAWN_RATE: 0.1,
+        MAX_LINES: 30,
+        SPAWN_RATE: 0.2,
         LINE_WIDTH: 0.3, // FIXED: Base width - will be scaled by perspective
         LINE_HEIGHT: 1.95, // ENHANCED: Increased by 30% (was 1.5) for better visibility
         LIFETIME_RANGE: { min: 3000, max: 6000 },
@@ -106,6 +106,12 @@ const CONFIG = {
             SCALE_FACTOR_FORMULA: 'nearPlane / (nearPlane + zDepth)', // TC-010 scaling formula
             MIN_SCALE: 0.3, // Increased minimum scale for better visibility
             MAX_SCALE: 3.0  // Increased maximum scale for more prominence
+        },
+        // FR-016: Growth animation configuration (TC-013)
+        GROWTH_ANIMATION: {
+            DURATION: 1500, // Duration in milliseconds for line to grow to full height
+            MIN_HEIGHT: 0.01, // Starting height (near zero)
+            EASING_FUNCTION: 'easeOutQuad' // Natural motion easing (TC-013)
         }
     },
 
@@ -393,6 +399,57 @@ const Utils = {
         finalHeight *= margin;
         
         return { width: finalWidth, height: finalHeight };
+    },
+
+    /**
+     * Easing Functions for smooth animations (FR-016, TC-013)
+     * t: current time (0-1)
+     * Returns: eased value (0-1)
+     */
+    easing: {
+        /**
+         * Ease In Out Cubic - smooth acceleration and deceleration
+         * @param {number} t - Progress value between 0 and 1
+         * @returns {number} Eased value between 0 and 1
+         */
+        easeInOutCubic: function(t) {
+            return t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        },
+
+        /**
+         * Ease Out Quad - fast start, slow finish
+         * @param {number} t - Progress value between 0 and 1
+         * @returns {number} Eased value between 0 and 1
+         */
+        easeOutQuad: function(t) {
+            return 1 - (1 - t) * (1 - t);
+        },
+
+        /**
+         * Ease Out Elastic - elastic overshoot effect
+         * @param {number} t - Progress value between 0 and 1
+         * @returns {number} Eased value between 0 and 1
+         */
+        easeOutElastic: function(t) {
+            const c4 = (2 * Math.PI) / 3;
+
+            return t === 0
+                ? 0
+                : t === 1
+                ? 1
+                : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+        },
+
+        /**
+         * Linear - no easing, constant speed
+         * @param {number} t - Progress value between 0 and 1
+         * @returns {number} Same value (linear)
+         */
+        linear: function(t) {
+            return t;
+        }
     }
 };
 
