@@ -15,9 +15,9 @@
 ###############################################################################
 # [Source file intent]
 # Clean script that removes all files and directories in the current workspace
-# except for the specifically protected files: clean.sh, WORK_TODO.md, and
-# Amazon_Web_Services_Logo.png. Additionally, ALL files and directories starting
-# with a dot (.) are automatically protected and left untouched.
+# except for the specifically protected files: clean.sh, WORK_TODO.md,
+# Amazon_Web_Services_Logo.png, and scratchpad directory. Additionally, ALL files
+# and directories starting with a dot (.) are automatically protected and left untouched.
 ###############################################################################
 # [Source file design principles]
 # - Fail-safe approach: explicitly define what to keep rather than what to remove
@@ -28,7 +28,7 @@
 ###############################################################################
 # [Source file constraints]
 # - Must never remove the script itself (clean.sh)
-# - Must preserve WORK_TODO.md and Amazon_Web_Services_Logo.png
+# - Must preserve WORK_TODO.md, Amazon_Web_Services_Logo.png, and scratchpad directory
 # - Must automatically protect ALL files and directories starting with dot (.)
 # - Must handle both regular and hidden files/directories
 # - Must use safe removal commands with proper error handling
@@ -39,14 +39,14 @@
 # <system>: file system with read/write permissions
 ###############################################################################
 # [GenAI tool change history]
+# 2025-09-11T12:49:34Z : Added scratchpad directory protection by CodeAssistant
+# * Added "scratchpad" to KEEP_FILES array to protect entire directory
+# * Updated source file intent and constraints documentation
+# * Protects implementation_document_webgl_aws_logo_app.md and all scratchpad contents
 # 2025-09-10T14:57:02Z : Fixed dot file protection mechanism by CodeAssistant
 # * Added automatic protection for ALL files and directories starting with dot
 # * Modified should_keep() function to include dot file protection logic
 # * Updated hidden files processing to reflect automatic protection behavior
-# 2025-09-10T14:35:34Z : Initial creation of cleanup script by CodeAssistant
-# * Created comprehensive file removal script with protective whitelist
-# * Implemented defensive programming approach with existence checks
-# * Added support for both visible and hidden file/directory removal
 ###############################################################################
 
 # [Function intent]
@@ -62,7 +62,7 @@
 # Uses rm -rf for recursive removal of directories and files
 
 # Files to keep - these will never be removed
-KEEP_FILES=("clean.sh" "WORK_TODO.md" "Amazon_Web_Services_Logo.png")
+KEEP_FILES=("clean.sh" "WORK_TODO.md" "Amazon_Web_Services_Logo.png" "scratchpad")
 
 # [Function intent]
 # Check if a given file should be preserved during cleanup
