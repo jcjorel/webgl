@@ -496,41 +496,46 @@ class ShootingStars {
 }
 
 /**
- * VaporwaveLines - Animated vertical gradient lines (FR-011, FR-012)
+ * VaporwaveBubbles - Animated circular vapor bubbles (FR-011, FR-012, FR-016)
+ * UPDATED: Changed from vertical lines to circular vapor bubbles
  */
-class VaporwaveLines {
+class VaporwaveBubbles {
     constructor() {
         this.group = new THREE.Group();
-        this.lines = [];
-        this.maxLines = CONFIG.VAPORWAVE.MAX_LINES;
+        this.bubbles = [];
+        this.maxBubbles = CONFIG.VAPORWAVE.MAX_LINES; // Reusing config but for bubbles now
         
-        // Create shared gradient shader material
-        this.createGradientShaderMaterial();
+        // Create shared bubble material (simpler than gradient shader)
+        this.createBubbleMaterial();
     }
 
     /**
-     * Initialize the vaporwave lines system
+     * Initialize the vaporwave bubbles system
      */
     init() {
         try {
-            console.log('✓ VaporwaveLines initialized successfully');
+            console.log('✓ VaporwaveBubbles initialized successfully');
             return true;
             
         } catch (error) {
-            console.error('✗ VaporwaveLines initialization failed:', error);
+            console.error('✗ VaporwaveBubbles initialization failed:', error);
             throw error;
         }
     }
 
     /**
-     * Create gradient shader material as per FR-012
+     * Create bubble material with circular gradients and glowing effects (DC-003)
+     * FIXED: Implements shader techniques as required
      */
-    createGradientShaderMaterial() {
-        // FIXED: Implement proper gradient shader as specified in FR-012
+    createBubbleMaterial() {
+        // DC-003: Shader techniques for circular gradients and glowing effects
         const vertexShader = `
             varying vec2 vUv;
+            varying float vDistance;
             void main() {
                 vUv = uv;
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vDistance = distance(cameraPosition, worldPosition.xyz);
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
             }
         `;
@@ -538,21 +543,39 @@ class VaporwaveLines {
         const fragmentShader = `
             uniform float uAlpha;
             uniform vec3 uColor;
+            uniform float uTime;
             varying vec2 vUv;
+            varying float vDistance;
+            
             void main() {
-                // FR-012: Gradient fully transparent at bottom, semi-transparent at top
-                float gradient = vUv.y; // 0 at bottom, 1 at top
-                float alpha = gradient * uAlpha;
-                gl_FragColor = vec4(uColor, alpha);
+                // DC-003: Circular gradient effect
+                vec2 center = vec2(0.5, 0.5);
+                float dist = distance(vUv, center);
+                
+                // Create circular gradient from center to edge
+                float gradient = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                // DC-003: Glowing effect with pulsing animation
+                float glow = gradient * gradient;
+                float pulse = 0.8 + 0.2 * sin(uTime * 2.0);
+                
+                // Combine gradient and glow
+                float finalAlpha = gradient * uAlpha * pulse;
+                
+                // DC-003: Neon color intensity based on glow
+                vec3 finalColor = uColor * (1.0 + glow * 0.5);
+                
+                gl_FragColor = vec4(finalColor, finalAlpha);
             }
         `;
 
-        this.gradientMaterial = new THREE.ShaderMaterial({
+        this.baseMaterial = new THREE.ShaderMaterial({
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             uniforms: {
-                uAlpha: { value: 1.0 },
-                uColor: { value: new THREE.Color(0xFF00FF) }
+                uAlpha: { value: 0.0 },
+                uColor: { value: new THREE.Color(0xFF00FF) },
+                uTime: { value: 0.0 }
             },
             transparent: true,
             blending: THREE.AdditiveBlending,
@@ -561,184 +584,232 @@ class VaporwaveLines {
     }
 
     /**
-     * Create a new vaporwave line with proper gradient implementation and perspective scaling
-     * FR-016: Lines start minimized and grow smoothly to full size
-     * @returns {object} Line object
+     * Create a new vaporwave bubble with circular geometry and perspective scaling
+     * FR-011: Circular vapor bubbles instead of vertical lines
+     * FR-016: Bubbles start minimized and grow smoothly to full size
+     * @returns {object} Bubble object
      */
-    createLine() {
+    createBubble() {
         const color = Utils.getRandomVaporwaveColor();
-        const alpha = Utils.randomBetween(CONFIG.VAPORWAVE.ALPHA_RANGE.min, CONFIG.VAPORWAVE.ALPHA_RANGE.max);
+        const targetAlpha = Utils.randomBetween(CONFIG.VAPORWAVE.ALPHA_RANGE.min, CONFIG.VAPORWAVE.ALPHA_RANGE.max);
         const lifetime = Utils.randomBetween(CONFIG.VAPORWAVE.LIFETIME_RANGE.min, CONFIG.VAPORWAVE.LIFETIME_RANGE.max);
         const x = Utils.randomBetween(-CONFIG.VAPORWAVE.SPAWN_AREA.X_RANGE / 2, CONFIG.VAPORWAVE.SPAWN_AREA.X_RANGE / 2);
         
-        // FIXED: Position for proper foreground/background distribution (FR-015)
+        // FR-015: Position bubbles behind AWS logo (Z < 0, AWS logo is at z=0)
         const baseZ = CONFIG.VAPORWAVE.SPAWN_AREA.Z_POSITION;
         const zRange = CONFIG.VAPORWAVE.SPAWN_AREA.Z_RANGE;
         const z = Utils.randomBetween(baseZ - zRange/2, baseZ + zRange/2);
 
-        // Z-ordering fix: All vaporwave lines now correctly positioned behind AWS logo (Z < 0)
+        // Ensure z is always negative (behind AWS logo at z=0)
+        const safeZ = Math.min(z, -0.5);
 
-        // FIXED: Calculate perspective scaling based on z-depth (FR-013, TC-010)
-        const perspectiveScale = this.calculatePerspectiveScale(z);
+        // Calculate perspective scaling based on z-depth (FR-013, TC-010)
+        const perspectiveScale = this.calculatePerspectiveScale(safeZ);
         
-        // FIXED: Apply perspective scaling to line dimensions
-        const scaledWidth = CONFIG.VAPORWAVE.LINE_WIDTH * perspectiveScale.width;
-        const targetHeight = CONFIG.VAPORWAVE.LINE_HEIGHT * perspectiveScale.height; // FR-016: This is the target height
+        // Calculate target diameter with perspective scaling
+        const baseDiameter = CONFIG.VAPORWAVE.LINE_HEIGHT; // Reusing line height as base bubble size
+        const targetDiameter = baseDiameter * perspectiveScale.diameter;
         
-        // FR-016: Start with minimal height that will grow to target height
-        const startHeight = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT;
+        // FR-016: Start with minimal diameter that will grow to target diameter
+        const startDiameter = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT;
 
-        // Create geometry with minimal height initially (FR-016)
-        const geometry = new THREE.PlaneGeometry(scaledWidth, startHeight);
+        // FR-011: Create circular geometry (CircleGeometry for flat circles)
+        const geometry = new THREE.CircleGeometry(startDiameter / 2, 16); // radius = diameter/2, 16 segments
         
-        // FIXED: Clone gradient material and set unique color/alpha per FR-012
-        const material = this.gradientMaterial.clone();
+        // Create unique material for this bubble with shader
+        const material = this.baseMaterial.clone();
         material.uniforms.uColor.value = new THREE.Color(color);
-        material.uniforms.uAlpha.value = alpha;
+        material.uniforms.uAlpha.value = 0; // FR-012: Start fully transparent
+        material.uniforms.uTime.value = 0;
 
-        // Create mesh for the vertical line
+        // Create mesh for the circular bubble
         const mesh = new THREE.Mesh(geometry, material);
         
-        // Calculate ground level position based on scene layout
-        // Camera is at y=0, stock display is at y=-2.5, so ground level is at y=-3.5
+        // FR-011: Position bubble originating from ground level
+        // Calculate ground level based on scene layout (stock display at y=-2.5, so ground ~-3.5)
         const groundLevel = -3.5;
-        
-        // FR-016: Position lines starting from ground level with minimal height
-        // Offset by half of current height so bottom of line touches ground
-        const yPosition = groundLevel + (startHeight / 2);
+        const y = groundLevel + Utils.randomBetween(0, 0.5); // Start near ground, slight variation
         
         mesh.position.x = x;
-        mesh.position.y = yPosition;
-        mesh.position.z = z;
+        mesh.position.y = y;
+        mesh.position.z = safeZ;
 
-        const line = {
+        const bubble = {
             mesh: mesh,
             material: material,
             geometry: geometry,
             lifetime: lifetime,
             age: 0,
-            initialAlpha: alpha,
+            targetAlpha: targetAlpha, // FR-012: Target transparency to reach
+            currentAlpha: 0, // FR-012: Start fully transparent
             color: color,
-            z: z, // Store z for debugging
+            z: safeZ, // Store z for debugging
             perspectiveScale: perspectiveScale, // Store scale for debugging
             id: Math.random().toString(36).substring(2, 8),
             // FR-016, TC-013: Growth animation properties
-            currentHeight: startHeight,
-            targetHeight: targetHeight,
+            currentDiameter: startDiameter,
+            targetDiameter: targetDiameter,
             growthProgress: 0, // Progress from 0 to 1
             growthDuration: CONFIG.VAPORWAVE.GROWTH_ANIMATION.DURATION,
-            groundLevel: groundLevel,
-            scaledWidth: scaledWidth
+            // FR-012: Transparency animation properties
+            transparencyProgress: 0, // Progress from fully transparent to semi-transparent
+            // FIXED: Ground-hugging vapor physics - stays close to ground like fog
+            initialY: y, // Store initial ground position
+            velocity: {
+                x: Utils.randomBetween(-0.8, 0.8), // More horizontal drift for ground fog
+                y: Utils.randomBetween(0.05, 0.15), // Minimal upward movement (ground vapor)
+                z: Utils.randomBetween(-0.3, 0.3) // Some depth movement
+            }
         };
 
-        this.lines.push(line);
+        this.bubbles.push(bubble);
         this.group.add(mesh);
-        return line;
+        return bubble;
     }
 
     /**
-     * Calculate perspective scaling based on z-depth (FR-013, TC-010, TC-011)
-     * Implements: scaleFactor = nearPlane / (nearPlane + z-depth)
-     * @param {number} z - Z position of the line
-     * @returns {object} Scale factors for width and height
+     * Calculate perspective scaling with logarithmic depth buffer (TC-010, TC-012)
+     * Implements: scaleFactor = nearPlane / (nearPlane + z-depth) with logarithmic scaling
+     * @param {number} z - Z position of the bubble
+     * @returns {object} Scale factors for diameter
      */
     calculatePerspectiveScale(z) {
         const config = CONFIG.VAPORWAVE.PERSPECTIVE;
         const nearPlane = config.NEAR_PLANE;
+        const farPlane = 100.0; // For logarithmic calculation
         
-        // TC-010: scaleFactor = nearPlane / (nearPlane + z-depth)
-        const distance = Math.abs(z); // Distance from camera (at z=5, so relative distance)
-        const scaleFactor = nearPlane / (nearPlane + distance);
+        // TC-010, TC-012: Logarithmic depth buffer technique
+        const distance = Math.abs(z);
+        const logDepth = Math.log2(Math.max(distance, nearPlane)) / Math.log2(farPlane);
+        
+        // TC-010: Enhanced scaling with logarithmic depth
+        const linearScale = nearPlane / (nearPlane + distance);
+        const logScale = 1.0 - (logDepth * 0.8); // Logarithmic component
+        const combinedScale = linearScale * logScale;
         
         // Apply scaling constraints
-        const clampedScale = Utils.clamp(scaleFactor, config.MIN_SCALE, config.MAX_SCALE);
+        const clampedScale = Utils.clamp(combinedScale, config.MIN_SCALE, config.MAX_SCALE);
         
-        // FR-014: Ensure closest lines don't exceed 33% of screen height
-        const maxHeightScale = config.MAX_HEIGHT_RATIO * (window.innerHeight / CONFIG.VAPORWAVE.LINE_HEIGHT);
-        const heightScale = Math.min(clampedScale, maxHeightScale);
+        // FR-014: Ensure closest bubbles don't exceed 33% of screen height in diameter
+        const maxPixelDiameter = window.innerHeight * config.MAX_HEIGHT_RATIO;
+        const baseDiameter = CONFIG.VAPORWAVE.LINE_HEIGHT;
+        const maxAllowedScale = maxPixelDiameter / baseDiameter;
+        const diameterScale = Math.min(clampedScale, maxAllowedScale);
         
         return {
-            width: clampedScale,
-            height: heightScale
+            diameter: diameterScale
         };
     }
 
     /**
-     * Update vaporwave lines with proper shader uniform updates (FR-012) and growth animation (FR-016)
+     * Update vaporwave bubbles with growth and transparency animation (FR-012, FR-016)
      * @param {number} deltaTime - Time since last frame
      * @param {number} elapsedTime - Total elapsed time
      */
     update(deltaTime, elapsedTime) {
-        var frameCheckInterval = 120; // Check every 2 seconds at 60fps
-        
         var spawnRoll = Math.random();
-        var shouldSpawn = spawnRoll < CONFIG.VAPORWAVE.SPAWN_RATE && this.lines.length < this.maxLines;
+        var shouldSpawn = spawnRoll < CONFIG.VAPORWAVE.SPAWN_RATE && this.bubbles.length < this.maxBubbles;
 
-        // Spawn new lines randomly (FR-011: randomly appearing)
+        // Spawn new bubbles randomly (FR-011: randomly appearing)
         if (shouldSpawn) {
-            this.createLine();
+            this.createBubble();
         }
 
-        // Update existing lines
-        for (var i = this.lines.length - 1; i >= 0; i--) {
-            var line = this.lines[i];
-            line.age += deltaTime * 1000; // Convert to milliseconds
+        // Update existing bubbles
+        for (var i = this.bubbles.length - 1; i >= 0; i--) {
+            var bubble = this.bubbles[i];
+            bubble.age += deltaTime * 1000; // Convert to milliseconds
+
+            // FIXED: Ground-hugging vapor physics - stays near ground like fog
+            // Apply velocity with stronger horizontal movement, minimal vertical
+            bubble.mesh.position.x += bubble.velocity.x * deltaTime * 8;
+            bubble.mesh.position.y += bubble.velocity.y * deltaTime * 3; // Reduced vertical speed
+            bubble.mesh.position.z += bubble.velocity.z * deltaTime * 5;
+            
+            // Ground vapor behavior - gradually settles down
+            bubble.velocity.y *= 0.98; // Slower deceleration
+            bubble.velocity.x *= 0.995; // Horizontal friction
 
             // FR-016: Update growth animation (TC-013: using easing functions)
-            if (line.growthProgress < 1) {
-                // Calculate progress (0 to 1)
-                line.growthProgress = Math.min(1, line.age / line.growthDuration);
+            if (bubble.growthProgress < 1) {
+                // Calculate growth progress (0 to 1)
+                bubble.growthProgress = Math.min(1, bubble.age / bubble.growthDuration);
                 
                 // Apply easing function for smooth growth (TC-013)
-                var easedProgress = Utils.easing[CONFIG.VAPORWAVE.GROWTH_ANIMATION.EASING_FUNCTION](line.growthProgress);
+                var easedProgress = Utils.easing[CONFIG.VAPORWAVE.GROWTH_ANIMATION.EASING_FUNCTION](bubble.growthProgress);
                 
-                // Calculate current height based on eased progress
-                line.currentHeight = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT +
-                    (line.targetHeight - CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT) * easedProgress;
+                // Calculate current diameter based on eased progress
+                bubble.currentDiameter = CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT +
+                    (bubble.targetDiameter - CONFIG.VAPORWAVE.GROWTH_ANIMATION.MIN_HEIGHT) * easedProgress;
                 
-                // Update geometry to reflect new height
-                line.geometry.dispose(); // Dispose old geometry
-                line.geometry = new THREE.PlaneGeometry(line.scaledWidth, line.currentHeight);
-                line.mesh.geometry = line.geometry;
-                
-                // Update Y position to keep bottom at ground level
-                line.mesh.position.y = line.groundLevel + (line.currentHeight / 2);
+                // Update geometry to reflect new diameter
+                bubble.geometry.dispose(); // Dispose old geometry
+                bubble.geometry = new THREE.CircleGeometry(bubble.currentDiameter / 2, 16);
+                bubble.mesh.geometry = bubble.geometry;
             }
 
-            // FIXED: Calculate fade based on age (FR-012: randomly selected display duration)
-            var lifeRatio = line.age / line.lifetime;
-            var alpha = line.initialAlpha * (1 - lifeRatio);
-
-            // FIXED: Update shader uniform instead of material opacity
-            if (line.material.uniforms && line.material.uniforms.uAlpha) {
-                line.material.uniforms.uAlpha.value = Math.max(0, alpha);
+            // FR-012: Update transparency animation (start transparent → semi-transparent)
+            if (bubble.transparencyProgress < 1) {
+                // Calculate transparency progress (0 to 1)
+                bubble.transparencyProgress = Math.min(1, bubble.age / (bubble.growthDuration * 1.5)); // Slower than growth
+                
+                // Calculate current alpha (from 0 to target alpha)
+                bubble.currentAlpha = bubble.targetAlpha * bubble.transparencyProgress;
+                
+                // Update shader uniform for custom material
+                if (bubble.material.uniforms && bubble.material.uniforms.uAlpha) {
+                    bubble.material.uniforms.uAlpha.value = bubble.currentAlpha;
+                }
             }
 
-            // Remove expired lines
-            if (line.age >= line.lifetime) {
-                this.group.remove(line.mesh);
-                line.geometry.dispose();
-                line.material.dispose();
-                this.lines.splice(i, 1);
+            // Update time uniform for pulsing glow effect
+            if (bubble.material.uniforms && bubble.material.uniforms.uTime) {
+                bubble.material.uniforms.uTime.value = elapsedTime;
+            }
+
+            // Calculate fade at end of life
+            var lifeRatio = bubble.age / bubble.lifetime;
+            if (lifeRatio > 0.8) { // Start fading in last 20% of life
+                var fadeRatio = (lifeRatio - 0.8) / 0.2; // 0 to 1 in last 20%
+                var fadedAlpha = bubble.currentAlpha * (1 - fadeRatio);
+                
+                // Update shader uniform for fade
+                if (bubble.material.uniforms && bubble.material.uniforms.uAlpha) {
+                    bubble.material.uniforms.uAlpha.value = fadedAlpha;
+                }
+            }
+
+            // Remove bubbles that have drifted too far or expired (ground vapor behavior)
+            var maxHeight = bubble.initialY + 2; // Stay close to ground (was 8)
+            var tooHigh = bubble.mesh.position.y > maxHeight;
+            var tooLow = bubble.mesh.position.y < bubble.initialY - 1; // Don't go below ground
+            var tooFar = Math.abs(bubble.mesh.position.x) > 15; // Horizontal drift limit
+            var expired = bubble.age >= bubble.lifetime;
+            
+            if (expired || tooHigh || tooLow || tooFar) {
+                this.group.remove(bubble.mesh);
+                bubble.geometry.dispose();
+                bubble.material.dispose();
+                this.bubbles.splice(i, 1);
             }
         }
     }
 
     /**
-     * Dispose of resources including gradient shader
+     * Dispose of resources
      */
     dispose() {
-        // Dispose individual lines
-        this.lines.forEach(line => {
-            this.group.remove(line.mesh);
-            line.geometry.dispose();
-            line.material.dispose();
+        // Dispose individual bubbles
+        this.bubbles.forEach(bubble => {
+            this.group.remove(bubble.mesh);
+            bubble.geometry.dispose();
+            bubble.material.dispose();
         });
-        this.lines = [];
+        this.bubbles = [];
         
-        // Dispose shared gradient material
-        if (this.gradientMaterial) {
-            this.gradientMaterial.dispose();
+        // Dispose base material
+        if (this.baseMaterial) {
+            this.baseMaterial.dispose();
         }
     }
 }
@@ -891,7 +962,7 @@ class BackgroundScene {
 window.GlassPane = GlassPane;
 window.StockDisplay = StockDisplay;
 window.ShootingStars = ShootingStars;
-window.VaporwaveLines = VaporwaveLines;
+window.VaporwaveBubbles = VaporwaveBubbles;
 window.BackgroundScene = BackgroundScene;
 
 console.log('✓ Components.js loaded successfully');

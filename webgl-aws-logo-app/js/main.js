@@ -193,13 +193,13 @@ class WebGLApp {
         // Add to INDEPENDENT scene (fixed, not affected by OrbitControls)
         this.sceneManager.independentScene.add(this.components.shootingStars.particleSystem);
 
-        // Create vaporwave lines system
-        this.components.vaporwaveLines = new VaporwaveLines();
-        this.components.vaporwaveLines.init();
+        // Create vaporwave bubbles system
+        this.components.vaporwaveBubbles = new VaporwaveBubbles();
+        this.components.vaporwaveBubbles.init();
         
         // FIXED: Add vaporwave to INDEPENDENT scene (TC-005: not subject to mouse control)
         // This ensures vaporwave elements remain independent from OrbitControls camera movements
-        this.sceneManager.independentScene.add(this.components.vaporwaveLines.group);
+        this.sceneManager.independentScene.add(this.components.vaporwaveBubbles.group);
     }
 
     /**
@@ -239,9 +239,9 @@ class WebGLApp {
                 this.components.shootingStars.update(deltaTime);
             }
 
-            // Update vaporwave lines
-            if (this.components.vaporwaveLines) {
-                this.components.vaporwaveLines.update(deltaTime, elapsedTime);
+            // Update vaporwave bubbles
+            if (this.components.vaporwaveBubbles) {
+                this.components.vaporwaveBubbles.update(deltaTime, elapsedTime);
             }
 
             // Update controls (required for damping)
