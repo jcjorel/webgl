@@ -192,23 +192,33 @@ class SceneManager {
     }
 
     /**
-     * Render all scenes in proper order
+     * Render all scenes in proper order with selective tone mapping
+     * Background renders with original colors, 3D scenes maintain lighting effects
      */
     render() {
-        // Enable auto-clear for the first render
-        this.renderer.autoClear = true;
+        // Save current renderer settings for 3D lighting
+        const originalToneMapping = this.renderer.toneMapping;
+        const originalExposure = this.renderer.toneMappingExposure;
+        const originalColorSpace = this.renderer.outputColorSpace;
         
-        // 1. Render background scene first (furthest back, fixed position)
+        // 1. Render background with original colors (no tone mapping effects)
+        this.renderer.toneMapping = THREE.NoToneMapping;
+        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+        this.renderer.autoClear = true;
         this.renderer.render(this.backgroundScene, this.backgroundCamera);
         
-        // Disable auto-clear for subsequent renders to layer them
+        // 2. Restore tone mapping for 3D scenes with lighting effects
+        this.renderer.toneMapping = originalToneMapping;
+        this.renderer.toneMappingExposure = originalExposure;
+        this.renderer.outputColorSpace = originalColorSpace;
+        
+        // 3. Render independent elements (shooting stars, vaporwave) layered on background
         this.renderer.autoClear = false;
         this.renderer.clearDepth = false;
-        
-        // 2. Render independent elements (shooting stars, vaporwave) layered on background
         this.renderer.render(this.independentScene, this.independentCamera);
         
-        // 3. Render main scene (AWS logo, stock display) layered on top with OrbitControls camera
+        // 4. Render main scene (AWS logo, stock display) layered on top with full 3D lighting
         this.renderer.render(this.scene, this.camera);
         
         // Reset auto-clear for next frame
