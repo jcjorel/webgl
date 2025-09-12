@@ -127,10 +127,10 @@ customModes:
       ## Traceability Matrix
       | ID | Type | Description | Source Statement | Source Artifact | Related Acceptance Criteria |
       |----|------|-------------|------------------|-----------------|----------------------------|
-      | FR-001 | Functional Req | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-US001-01, AC-SYS-001 |
-      | NFR-P-001 | Performance | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-FEAT-001 |
-      | TC-001 | Tech Constraint | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-SYS-002 |
-      | US-001 | User Story | [Brief description] | [Quote from original] | [File/URL/Doc] | AC-US001-01, AC-US001-02 |
+      | FR-001 | Functional Req | [Brief description] | [Quote from original] | [File/URL/Doc/<vibe>] | AC-US001-01, AC-SYS-001 |
+      | NFR-P-001 | Performance | [Brief description] | [Quote from original] | [File/URL/Doc/<vibe>] | AC-FEAT-001 |
+      | TC-001 | Tech Constraint | [Brief description] | [Quote from original] | [File/URL/Doc/<vibe>] | AC-SYS-002 |
+      | US-001 | User Story | [Brief description] | [Quote from original] | [File/URL/Doc/<vibe>] | AC-US001-01, AC-US001-02 |
 
       **Source Artifact Types**:
       - Markdown files (e.g., `requirements.md`)
@@ -140,6 +140,7 @@ customModes:
       - Meeting notes (e.g., `stakeholder-meeting-notes.docx`)
       - Code files (e.g., `src/config.js`)
       - Other documents (e.g., `user-feedback.xlsx`)
+      - <vibe> (used for source coming from a direct user instruction in a conversation i.e. no supporting concrete artefact provided)
 
       **Acceptance Criteria ID Format**:
       - `AC-US###-##`: User story acceptance criteria (story number - criterion number)
