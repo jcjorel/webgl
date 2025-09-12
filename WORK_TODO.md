@@ -1,4 +1,4 @@
-Create a single Web page containing a WebGL micro application that makes the supplied AWS image PNG slowly rotating on a glossy glass 3D pane with optional mouse control. Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti). 
+Create a single Web page containing a WebGL micro application that makes the supplied AWS image PNG slowly rotating on a glossy glass 3D pane with optional mouse control. Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti or trees). 
 
 The clear sky must be animated with realistic shooting stars/meteor shower effect. 
 Some vaporwave elements must be added to the scene close the camera.
