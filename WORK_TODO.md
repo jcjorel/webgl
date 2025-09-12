@@ -14,7 +14,7 @@ You will make sure that:
 
 Constraints:
 Use Three.js framework. 
-Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option). 
+Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option and return HTTP header Cache-Control forbidding browser caching). 
 Background image must fit automatically the web page size (real image size 1920x1088). 
 Design it for Chrome latest version browser.
 
