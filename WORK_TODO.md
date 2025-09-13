@@ -21,7 +21,7 @@ Design it for Chrome latest version browser.
 To test the solution, you will use the browser tool and will leverage the Chrome Developper tool logs. 
 At build time, use:
 - Perplexity MCP Server to fetch the current AMZN stock value.
-- Context7 MCP server for right usage (URLs, best-practices...) of latest version of Three.js and OrbitControl.
+- Context7 MCP server for right usage (ES6 module import and initialization, best-practices...) of latest version of Three.js and OrbitControl.
 - AWS Nova canvas MCP server to generate images.
 IMPORTANT: If you encounter integration issues with Three.js or OrbitControl, leverage Context7 & Perplexity to enrich your reasoning.
 
