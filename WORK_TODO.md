@@ -7,7 +7,7 @@ Under the rotating AWS logo and rotating with it, place an **hardcoded (i.e. not
 
 You will make sure that:
 - The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)
-- The shooting stars and vaporwave 3D WebGL canvas are independents to the Logo&AMZN stock one (so not subject to mouse control)
+- The shooting stars and vaporwave 3D WebGL canvas MUST be independents to the Logo&AMZN stock one (so not subject to mouse control)
 - The shooting stars are small white-colored lines with variable alpha channel depending on distance (i.e. think shooting stars entering the atmosphere and becoming brighter as they go above the camera)
 - Make sure that shooting stars come from a plane few pixels above the background horizon line and flow quickly across the sky toward a vanishing virtual point above and behind the camera (**Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the polygon of the sky area)
 - Make sure vaporwave elements are randomly appearing as animated circular vapor bubbles originating near ground level with ground-hugging behavior. The bubbles appear minimized and grow smoothly to their final size, positioned behind the AWS logo with proper perspective scaling (distant bubbles smaller than closer ones). Each bubble has randomly selected target transparency and display duration, never exceeding 33% of screen height for closest bubbles.
