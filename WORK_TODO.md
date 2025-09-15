@@ -1,32 +1,39 @@
-Create a single Web page containing a WebGL micro application that makes the supplied AWS image PNG slowly rotating on a glossy glass 3D pane with optional mouse control. Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti or trees). 
 
-The clear sky must be animated with realistic shooting stars/meteor shower effect. 
-Some vaporwave elements must be added to the scene close the camera.
+Tasks:
+- Create a single Web page containing a WebGL micro application that makes the available AWS image PNG slowly rotating on a glossy glass 3D pane with mouse control. 
+- Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti or trees or shooting stars or mountains). 
+- The clear sky must be animated with visualy appealing sparkling realistic shooting stars/meteor shower effect. 
+- The ground must have a dynamic animated vapor particle system to create a surreal ambiance.
 
-Under the rotating AWS logo and rotating with it, place an **hardcoded (i.e. not real-time)** AMZN stock value in $ (fetch today stock value as the hardcoded value).
+Implementation constraints:
+- Under the AWS logo and rotating with it, place an **hardcoded (i.e. not real-time)** AMZN stock value in $.
+- The AWS logo has strong metalness, is not transparent and reflect the surrounding background scene
+- Generated image is a fixed background (i.e. not rotating with the logo or mouse controled)
 
-You will make sure that:
-- The generated image is a fixed background (i.e. not rotating with the logo or mouse controled)
-- The shooting stars and vaporwave 3D WebGL canvas MUST be independents to the Logo&AMZN stock one (so not subject to mouse control)
-- The shooting stars are small white-colored lines with variable alpha channel depending on distance (i.e. think shooting stars entering the atmosphere and becoming brighter as they go above the camera)
-- Make sure that shooting stars come from a plane few pixels above the background horizon line and flow quickly across the sky toward a vanishing virtual point above and behind the camera (**Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the polygon of the sky area)
-- Make sure vaporwave elements are randomly appearing as animated circular vapor bubbles originating near ground level with ground-hugging behavior. The bubbles appear minimized and grow smoothly to their final size, positioned behind the AWS logo with proper perspective scaling (distant bubbles smaller than closer ones). Each bubble has randomly selected target transparency and display duration, never exceeding 33% of screen height for closest bubbles.
+- Shooting stars scene, ground vapor particles 3D scene and AWS Logo/AMZN stock 3D one MUST be independents.
+- Mouse control only apply to the AWS Logo/AMZN stock 3D scene.
+- Shooting stars appear at random positions above the horizon line
+- Each meteor enters the atmosphere at different depths, creating varying trail thicknesses
+- All meteors flow toward a vanishing point located behind the camera position (off-screen in high-altitude atmosphere): This creates the effect of meteors streaming toward the viewer, not toward a visible point in the sky
+- Shooting stars are light-emitting glowing 3D lines, simulating the metor point and its long alpha blended trail with realistic color variations.
 
-Constraints:
-Use Three.js framework. 
-Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option and return HTTP header Cache-Control forbidding browser caching). 
-Background image must fit automatically the web page size (real image size 1920x1088). 
-Design it for Chrome latest version browser.
+- Make sure vapors are randomly appearing as animated realistic highly-visible neon-colored cloudy foggy vapor originating from ground level with ground-hugging behavior (do not use geometric based representation, use only textures and fragment shaders with Perlin noise). 
+- Make sure vapors are randomly appearing, are minimized and grow smoothly to their final size, positioned behind the AWS logo with proper perspective scaling (distant vapor smaller than closer ones). Each vapor cloud has randomly selected target transparency and display duration.
+- Make sure that vapors sticks to the ground never reaching the skyline
+- **Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the skyline coordinates to know where the shooting stars must appear
+
+Technical constraints:
+- Use Three.js framework. 
+- Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option, HTTP header Cache-Control forbidding browser caching, no mime-type guessing). 
+- Background image must fit automatically the web page size (real image size 1920x1088). 
+- Put all Javascript and CSS in the HTML page
+- Design it for Chrome latest version browser.
 
 To test the solution, you will use the browser tool and will leverage the Chrome Developper tool logs. 
 At build time, use:
 - Perplexity MCP Server to fetch the current AMZN stock value.
-- Context7 MCP server for right usage (ES6 module import and initialization, best-practices...) of latest version of Three.js and OrbitControl.
+- Context7 MCP server for right usage (ES6 module import map and initialization, best-practices...) of latest version of Three.js and OrbitControl.
 - AWS Nova canvas MCP server to generate images.
 IMPORTANT: If you encounter integration issues with Three.js or OrbitControl, leverage Context7 & Perplexity to enrich your reasoning.
 
-Make it KISS!
-
-CRITICAL: Stick to the requirements. Do not inflate them during your processing!
-
-Ask questions.
+Ask questions to clarify ambiguities.
