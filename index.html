@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS WebGL Spectacular</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #background-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('output/desert_night_supernatural_fixed.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 12px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            z-index: 1000;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container">
+        <div id="background-image"></div>
+        <canvas id="canvas"></canvas>
+    </div>
+    <div id="info">
+        AWS WebGL Spectacular | FPS: <span id="fps">0</span>
+    </div>
+    <div id="loading">Loading...</div>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+    }
+    </script>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        
+        // Configuration
+        const CONFIG = {
+            SKYLINE_Y: -1.6,  // Updated for new crystalline desert scene
+            GROUND_Y: -4.8,
+            AMZN_STOCK: "$231.48",
+            DEBUG: false  // Disable debug logging - vapor issues resolved
+        };
+        
+        // Global variables
+        let renderer, composer;
+        let sceneManager;
+        let clock = new THREE.Clock();
+        let fps = 0, frameCount = 0, lastTime = 0;
+        
+        // Scene Manager Class
+        class SceneManager {
+            constructor() {
+                this.scenes = {};
+                this.cameras = {};
+                this.renderTargets = {};
+                this.init();
+            }
+            
+            init() {
+                // Initialize renderer
+                const canvas = document.getElementById('canvas');
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.outputColorSpace = THREE.SRGBColorSpace;
+                
+                // Create independent scenes
+                this.createShootingStarsScene();
+                this.createVaporScene();
+                this.createLogoScene();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => this.onWindowResize());
+            }
+            
+            createShootingStarsScene() {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(
+                    75, window.innerWidth / window.innerHeight, 0.1, 200
+                );
+                camera.position.set(0, 0, 10);
+                
+                this.scenes.shootingStars = new ShootingStarsScene(scene);
+                this.cameras.shootingStars = camera;
+            }
+            
+            createVaporScene() {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(
+                    75, window.innerWidth / window.innerHeight, 0.1, 100
+                );
+                camera.position.set(0, 0, 10);
+                
+                this.scenes.vapor = new GroundVaporScene(scene);
+                this.cameras.vapor = camera;
+            }
+            
+            createLogoScene() {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(
+                    50, window.innerWidth / window.innerHeight, 0.1, 100
+                );
+                camera.position.set(0, 0, 10);
+                
+                this.scenes.logo = new AwsLogoScene(scene, camera, renderer);
+                this.cameras.logo = camera;
+            }
+            
+            update(deltaTime) {
+                // Update each scene independently
+                if (this.scenes.shootingStars) this.scenes.shootingStars.update(deltaTime);
+                if (this.scenes.vapor) this.scenes.vapor.update(deltaTime);
+                if (this.scenes.logo) this.scenes.logo.update(deltaTime);
+            }
+            
+            render() {
+                // Clear the renderer
+                renderer.clear();
+                
+                // Enable depth testing for proper layering
+                renderer.autoClear = false;
+                
+                // Render shooting stars (back layer)
+                if (this.scenes.shootingStars && this.cameras.shootingStars) {
+                    renderer.render(this.scenes.shootingStars.scene, this.cameras.shootingStars);
+                }
+                
+                // Render vapor (middle layer)
+                if (this.scenes.vapor && this.cameras.vapor) {
+                    renderer.clearDepth();
+                    renderer.render(this.scenes.vapor.scene, this.cameras.vapor);
+                }
+                
+                // Render logo (front layer)
+                if (this.scenes.logo && this.cameras.logo) {
+                    renderer.clearDepth();
+                    renderer.render(this.scenes.logo.scene, this.cameras.logo);
+                }
+                
+                renderer.autoClear = true;
+            }
+            
+            onWindowResize() {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                
+                Object.values(this.cameras).forEach(camera => {
+                    if (camera.isPerspectiveCamera) {
+                        camera.aspect = width / height;
+                        camera.updateProjectionMatrix();
+                    }
+                });
+                
+                renderer.setSize(width, height);
+            }
+        }
+        
+        // Shooting Stars Scene
+        class ShootingStarsScene {
+            constructor(scene) {
+                this.scene = scene;
+                this.meteors = [];
+                this.maxMeteors = 75;
+                this.spawnTimer = 0;
+                this.spawnInterval = 0.08;
+                this.vanishingPoint = new THREE.Vector3(0, 0, 50);
+                this.init();
+            }
+            
+            init() {
+                // Add ambient light for visibility
+                const ambientLight = new THREE.AmbientLight(0x111111, 0.5);
+                this.scene.add(ambientLight);
+            }
+            
+            update(deltaTime) {
+                // Debug logging for shooting stars
+                if (CONFIG.DEBUG && this.meteors.length === 0) {
+                    console.log('🌟 No meteors currently active, attempting to spawn...');
+                }
+                
+                // Spawn new meteors
+                this.spawnTimer += deltaTime;
+                if (this.spawnTimer >= this.spawnInterval && this.meteors.length < this.maxMeteors) {
+                    this.spawnMeteor();
+                    this.spawnTimer = 0;
+                    this.spawnInterval = 0.05 + Math.random() * 0.3;
+                    
+                    if (CONFIG.DEBUG) {
+                        console.log('🌟 Spawned meteor, total count:', this.meteors.length);
+                    }
+                }
+                
+                // Update existing meteors
+                for (let i = this.meteors.length - 1; i >= 0; i--) {
+                    const meteor = this.meteors[i];
+                    meteor.update(deltaTime);
+                    
+                    // Remove if reached vanishing point or faded out
+                    if (meteor.position.z > 45 || meteor.opacity <= 0) {
+                        this.scene.remove(meteor.mesh);
+                        if (meteor.lineMesh) {
+                            this.scene.remove(meteor.lineMesh);
+                        }
+                        this.meteors.splice(i, 1);
+                    }
+                }
+            }
+            
+            spawnMeteor() {
+                const meteor = new Meteor(this.vanishingPoint);
+                
+                // Position in clear sky area only, well above mountains
+                meteor.position.set(
+                    (Math.random() - 0.5) * 50,
+                    CONFIG.SKYLINE_Y + 8 + Math.random() * 15,  // Start 8 units above skyline, clear sky only
+                    -15 + Math.random() * 30
+                );
+                
+                console.log('🌟 Creating meteor at position:', meteor.position);
+                
+                this.scene.add(meteor.mesh);
+                if (meteor.lineMesh) {
+                    this.scene.add(meteor.lineMesh);
+                }
+                this.meteors.push(meteor);
+            }
+        }
+        
+        // Meteor Class
+        class Meteor {
+            constructor(vanishingPoint) {
+                this.vanishingPoint = vanishingPoint;
+                this.position = new THREE.Vector3();
+                this.velocity = new THREE.Vector3();
+                this.opacity = 1.0;
+                this.trail = [];
+                this.trailLength = 30;
+                this.speed = 15 + Math.random() * 10;
+                this.color = this.getRandomColor();
+                this.createMesh();
+            }
+            
+            getRandomColor() {
+                const colors = [
+                    new THREE.Color(0xFFFFFF), // White
+                    new THREE.Color(0x87CEEB), // Blue
+                    new THREE.Color(0xFFA500), // Orange
+                    new THREE.Color(0xFF8000) // Bright orange (replaced red)
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            createMesh() {
+                // Create trail geometry
+                const points = [];
+                for (let i = 0; i < this.trailLength; i++) {
+                    points.push(new THREE.Vector3(0, 0, i * 0.1));
+                }
+                
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                
+                // Custom shader material for glowing trail
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        color: { value: this.color },
+                        opacity: { value: 1.0 }
+                    },
+                    vertexShader: `
+                        varying float vAlpha;
+                        void main() {
+                            vAlpha = 1.0 - (position.z / ${this.trailLength.toFixed(1)});
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                            gl_PointSize = 2.0 + vAlpha * 3.0;
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform vec3 color;
+                        uniform float opacity;
+                        varying float vAlpha;
+                        void main() {
+                            float alpha = vAlpha * opacity;
+                            vec3 glowColor = color * (0.8 + 0.2 * sin(vAlpha * 3.14159));
+                            gl_FragColor = vec4(glowColor, alpha);
+                        }
+                    `,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                
+                this.mesh = new THREE.Line(geometry, material);
+            }
+            
+            update(deltaTime) {
+                // Calculate direction toward vanishing point
+                const direction = this.vanishingPoint.clone().sub(this.position).normalize();
+                
+                // Update velocity and position
+                this.velocity = direction.multiplyScalar(this.speed);
+                this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+                
+                // Update mesh position
+                this.mesh.position.copy(this.position);
+                
+                // Update trail
+                this.updateTrail();
+                
+                // Fade out as it approaches vanishing point
+                const distance = this.position.distanceTo(this.vanishingPoint);
+                if (distance < 20) {
+                    this.opacity = distance / 20;
+                    this.mesh.material.uniforms.opacity.value = this.opacity;
+                }
+            }
+            
+            updateTrail() {
+                const positions = this.mesh.geometry.attributes.position.array;
+                
+                // Shift trail positions
+                for (let i = this.trailLength - 1; i > 0; i--) {
+                    positions[i * 3] = positions[(i - 1) * 3];
+                    positions[i * 3 + 1] = positions[(i - 1) * 3 + 1];
+                    positions[i * 3 + 2] = positions[(i - 1) * 3 + 2];
+                }
+                
+                // Set head position
+                positions[0] = 0;
+                positions[1] = 0;
+                positions[2] = 0;
+                
+                this.mesh.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+        
+        // Ground Vapor Scene
+        class GroundVaporScene {
+            constructor(scene) {
+                this.scene = scene;
+                this.vapors = [];
+                this.maxVapors = 30;
+                this.spawnTimer = 0;
+                this.spawnInterval = 0.6;
+                this.neonColors = [
+                    new THREE.Color(0x00FFFF), // Cyan
+                    new THREE.Color(0xFF00FF), // Magenta
+                    new THREE.Color(0x00FF00), // Lime
+                    new THREE.Color(0xFF8000), // Orange
+                    new THREE.Color(0x8000FF)  // Purple
+                ];
+                this.init();
+            }
+            
+            init() {
+                // Add subtle ambient light
+                const ambientLight = new THREE.AmbientLight(0x222222, 0.3);
+                this.scene.add(ambientLight);
+            }
+            
+            update(deltaTime) {
+                // Debug logging for vapor effects
+                if (CONFIG.DEBUG && this.vapors.length === 0) {
+                    console.log('💨 No vapors currently active, attempting to spawn...');
+                }
+                
+                // Spawn new vapors
+                this.spawnTimer += deltaTime;
+                if (this.spawnTimer >= this.spawnInterval && this.vapors.length < this.maxVapors) {
+                    this.spawnVapor();
+                    this.spawnTimer = 0;
+                    // UPDATED: Double the rate of appearance (halve the spawn interval)
+                    this.spawnInterval = 0.2 + Math.random() * 0.6;
+                    
+                    if (CONFIG.DEBUG) {
+                        console.log('💨 Spawned vapor, total count:', this.vapors.length);
+                    }
+                }
+                
+                // Update existing vapors
+                for (let i = this.vapors.length - 1; i >= 0; i--) {
+                    const vapor = this.vapors[i];
+                    vapor.update(deltaTime);
+                    
+                    if (vapor.isDead) {
+                        this.scene.remove(vapor.mesh);
+                        this.vapors.splice(i, 1);
+                    }
+                }
+            }
+            
+            spawnVapor() {
+                const vapor = new VaporCloud(this.neonColors);
+                
+                // Position at ground level, behind logo
+                vapor.position.set(
+                    (Math.random() - 0.5) * 60,
+                    CONFIG.GROUND_Y + Math.random() * 0.3,
+                    -25 + Math.random() * 20  // Behind logo (logo at Z=5)
+                );
+                
+                console.log('💨 Creating vapor at position:', vapor.position);
+                
+                this.scene.add(vapor.mesh);
+                this.vapors.push(vapor);
+            }
+        }
+        
+        // Vapor Cloud Class
+        class VaporCloud {
+            constructor(colorPalette) {
+                this.position = new THREE.Vector3();
+                this.scale = 0.1;
+                // UPDATED: Increase size by 50% (multiply by 1.5)
+                this.targetScale = (0.5 + Math.random() * 1.5) * 1.5;
+                this.opacity = 0;
+                this.targetOpacity = 0.3 + Math.random() * 0.5;
+                // UPDATED: Increase lifetime to accommodate longer fade-in
+                this.lifetime = 16 + Math.random() * 8;  // 16-24 seconds for extended presence
+                this.age = 0;
+                this.isDead = false;
+                this.phase = 'growing';
+                this.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                this.createMesh();
+            }
+            
+            createMesh() {
+                // UPDATED: Increase height by 50% to reduce rectangular appearance (4 * 1.5 = 6)
+                const geometry = new THREE.PlaneGeometry(6, 6);
+                
+                // Fragment shader for vapor effect
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        time: { value: 0 },
+                        opacity: { value: 0 },
+                        color: { value: this.color },
+                        scale: { value: 0.1 }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        uniform float scale;
+                        void main() {
+                            vUv = uv;
+                            vec3 pos = position * scale;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float time;
+                        uniform float opacity;
+                        uniform vec3 color;
+                        varying vec2 vUv;
+                        
+                        float random(vec2 st) {
+                            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453);
+                        }
+                        
+                        float noise(vec2 st) {
+                            vec2 i = floor(st);
+                            vec2 f = fract(st);
+                            float a = random(i);
+                            float b = random(i + vec2(1.0, 0.0));
+                            float c = random(i + vec2(0.0, 1.0));
+                            float d = random(i + vec2(1.0, 1.0));
+                            vec2 u = f * f * (3.0 - 2.0 * f);
+                            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+                        }
+                        
+                        void main() {
+                            vec2 st = vUv * 3.0 + time * 0.1;
+                            
+                            // Multi-octave noise
+                            float n = 0.0;
+                            n += noise(st) * 0.5;
+                            n += noise(st * 2.0) * 0.25;
+                            n += noise(st * 4.0) * 0.125;
+                            
+                            // FIXED: Better edge fade-out to hide rectangular container
+                            // Radial distance from center for circular fade
+                            vec2 center = vec2(0.5, 0.5);
+                            float distFromCenter = length(vUv - center);
+                            float radialFade = 1.0 - smoothstep(0.3, 0.5, distFromCenter);
+                            
+                            // Ground hugging effect with improved vertical fade
+                            float groundFade = 1.0 - smoothstep(0.0, 0.7, abs(vUv.y - 0.5) * 2.0);
+                            
+                            // FIXED: Combine both fade effects to eliminate rectangular edges
+                            float edgeFade = radialFade * groundFade;
+                            n *= edgeFade;
+                            
+                            // Softer cloudy appearance with better edge blending
+                            float alpha = smoothstep(0.15, 0.65, n) * opacity * edgeFade;
+                            
+                            // Neon glow
+                            vec3 glowColor = color * (1.0 + n * 0.5);
+                            
+                            gl_FragColor = vec4(glowColor, alpha);
+                        }
+                    `,
+                    transparent: true,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+                
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.material = material;
+            }
+            
+            update(deltaTime) {
+                this.age += deltaTime;
+                this.material.uniforms.time.value = this.age;
+                
+                // Debug: Log vapor growth timing
+                if (CONFIG.DEBUG && this.phase === 'growing') {
+                    console.log(`💨 Vapor growing: age=${this.age.toFixed(2)}s, scale=${this.scale.toFixed(2)}, opacity=${this.opacity.toFixed(2)}`);
+                }
+                
+                // Update position for subtle drift
+                this.position.x += (Math.random() - 0.5) * 0.3 * deltaTime;
+                this.position.z += (Math.random() - 0.5) * 0.2 * deltaTime;
+                
+                // Keep vapor at ground level
+                this.position.y = Math.min(this.position.y, CONFIG.SKYLINE_Y - 0.5);
+                this.mesh.position.copy(this.position);
+                
+                // Phase-based updates
+                switch(this.phase) {
+                    case 'growing':
+                        // UPDATED: Maximum fade-in period (12 seconds for extremely gradual appearance)
+                        const growProgress = Math.min(this.age / 12.0, 1.0);
+                        
+                        // FIXED: Gentler curve - very slow start, then smooth acceleration
+                        const gentleEase = this.gentleGrowthCurve(growProgress);
+                        this.scale = 0.1 + (this.targetScale - 0.1) * gentleEase;
+                        this.opacity = this.targetOpacity * gentleEase;
+                        
+                        if (CONFIG.DEBUG && growProgress >= 1.0) {
+                            console.log(`💨 Vapor finished growing in ${this.age.toFixed(2)}s - switching to stable phase`);
+                        }
+                        
+                        if (growProgress >= 1.0) {
+                            this.phase = 'stable';
+                        }
+                        break;
+                        
+                    case 'stable':
+                        // UPDATED: Much longer fade-out period (4 seconds for very gradual disappearance)
+                        if (this.age >= this.lifetime - 4.0) {
+                            this.phase = 'fading';
+                        }
+                        break;
+                        
+                    case 'fading':
+                        // UPDATED: 4-second fade period for very slow disappearance
+                        const fadeProgress = (this.age - (this.lifetime - 4.0)) / 4.0;
+                        this.opacity = this.targetOpacity * (1.0 - fadeProgress);
+                        
+                        if (fadeProgress >= 1.0) {
+                            this.isDead = true;
+                        }
+                        break;
+                }
+                
+                // Update uniforms
+                this.material.uniforms.scale.value = this.scale;
+                this.material.uniforms.opacity.value = this.opacity;
+            }
+            
+            easeInOut(t) {
+                return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            }
+            
+            // FIXED: New gentle growth curve - very slow start, smooth acceleration
+            gentleGrowthCurve(t) {
+                // Cubic ease-in for very slow start, then smooth acceleration
+                return t * t * t * (3.0 - 2.0 * t);
+            }
+        }
+        
+        // AWS Logo Scene
+        class AwsLogoScene {
+            constructor(scene, camera, renderer) {
+                this.scene = scene;
+                this.camera = camera;
+                this.renderer = renderer;
+                this.logoGroup = new THREE.Group();
+                this.stockText = null;
+                this.controls = null;
+                this.init();
+            }
+            
+            init() {
+                // Set up lighting
+                const ambientLight = new THREE.AmbientLight(0x404040, 1);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+                directionalLight.position.set(5, 5, 5);
+                directionalLight.castShadow = true;
+                this.scene.add(directionalLight);
+                
+                const backLight = new THREE.DirectionalLight(0x4080ff, 0.5);
+                backLight.position.set(-5, 3, -5);
+                this.scene.add(backLight);
+                
+                // Set up OrbitControls
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.target.set(0, 1, 8); // Match logo group position
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.minDistance = 5;
+                this.controls.maxDistance = 20;
+                this.controls.minPolarAngle = Math.PI / 6;
+                this.controls.maxPolarAngle = Math.PI * 5/6;
+                this.controls.update();
+                
+                // Load AWS logo
+                this.loadAWSLogo();
+                
+                // Load font and create stock text
+                this.loadStockText();
+                
+                // Position logo group higher and more forward for better visibility
+                this.logoGroup.position.set(0, 1, 8);
+                this.logoGroup.rotation.y = Math.PI * 0.02; // Slight angle for dynamic look
+                this.scene.add(this.logoGroup);
+                
+                // Update controls target to match logo position for natural rotation center
+                if (this.controls) {
+                    this.controls.target.copy(this.logoGroup.position);
+                    this.controls.update();
+                }
+            }
+            
+            loadAWSLogo() {
+                const textureLoader = new THREE.TextureLoader();
+                
+                // Add error handling and success logging
+                textureLoader.load('Amazon_Web_Services_Logo.png',
+                    (texture) => {
+                        console.log('✅ AWS Logo texture loaded successfully:', texture);
+                        console.log('Texture dimensions:', texture.image.width, 'x', texture.image.height);
+                        
+                        // Fix texture settings for proper display
+                        texture.colorSpace = THREE.SRGBColorSpace;
+                        texture.wrapS = THREE.ClampToEdgeWrapping;
+                        texture.wrapT = THREE.ClampToEdgeWrapping;
+                        texture.minFilter = THREE.LinearFilter;
+                        texture.magFilter = THREE.LinearFilter;
+                        
+                        // Create AWS logo plane (centered in glass box)
+                        const logoGeometry = new THREE.PlaneGeometry(2.5, 1.5);
+                        
+                        // Create logo material with strong metallic properties and environment reflection
+                        const logoMaterial = new THREE.MeshPhysicalMaterial({
+                            map: texture,
+                            color: 0xffffff,
+                            transparent: false,
+                            opacity: 1.0,
+                            roughness: 0.1,
+                            metalness: 0.8,  // Strong metalness for reflections
+                            clearcoat: 1.0,
+                            clearcoatRoughness: 0.05,
+                            reflectivity: 1.0,
+                            envMapIntensity: 1.5,
+                            side: THREE.DoubleSide  // Ensures visibility from both sides
+                        });
+                        
+                        const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+                        logoMesh.position.set(0, 0, 0.16); // On the front face of the glass box
+                        logoMesh.castShadow = true;
+                        logoMesh.receiveShadow = true;
+                        
+                        // Create reflective glass container box
+                        const glassGeometry = new THREE.BoxGeometry(3.2, 2.0, 0.3);
+                        const glassMaterial = new THREE.MeshPhysicalMaterial({
+                            color: 0x222244,  // Subtle tint
+                            transparent: true,
+                            opacity: 0.15,
+                            roughness: 0.02,
+                            metalness: 0.0,
+                            clearcoat: 1.0,
+                            clearcoatRoughness: 0.01,
+                            transmission: 0.8,  // High transmission for glass effect
+                            thickness: 0.8,     // Glass thickness
+                            ior: 1.52,          // Glass index of refraction
+                            reflectivity: 0.95,
+                            envMapIntensity: 2.0,
+                            side: THREE.DoubleSide
+                        });
+                        
+                        const glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
+                        glassMesh.castShadow = true;
+                        glassMesh.receiveShadow = true;
+                        
+                        // Store references for environment mapping
+                        this.logoMesh = logoMesh;
+                        this.logoMaterial = logoMaterial;
+                        this.glassMaterial = glassMaterial;
+                        
+                        console.log('✅ AWS Logo created and centered in reflective glass box');
+                        
+                        // Add glass box first (background), then centered logo
+                        this.logoGroup.add(glassMesh);   // Glass container
+                        this.logoGroup.add(logoMesh);    // Logo centered inside
+                        
+                        // Set up background environment reflection for both materials
+                        this.setupBackgroundEnvironmentMap(logoMaterial);
+                        this.setupBackgroundEnvironmentMap(glassMaterial);
+                        
+                        // Remove loading indicator
+                        document.getElementById('loading').style.display = 'none';
+                        
+                        console.log('✅ AWS Logo mesh added to scene');
+                    },
+                    // Progress callback
+                    (progress) => {
+                        console.log('⏳ Loading AWS logo texture:', Math.round((progress.loaded / progress.total) * 100) + '%');
+                    },
+                    // Error callback
+                    (error) => {
+                        console.error('❌ Error loading AWS logo texture:', error);
+                        // Fallback to a colored material
+                        this.createFallbackLogo();
+                    }
+                );
+            }
+            
+            createFallbackLogo() {
+                console.log('🔄 Creating fallback logo without texture');
+                
+                // Create smaller fallback logo
+                const logoGeometry = new THREE.PlaneGeometry(2.5, 1.5);
+                const logoMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xFF9900,  // AWS orange
+                    transparent: true,
+                    opacity: 0.9,
+                    roughness: 0.1,
+                    metalness: 0.0,
+                    clearcoat: 0.8,
+                    clearcoatRoughness: 0.05
+                });
+                
+                // Create glass background panel for fallback
+                const glassGeometry = new THREE.PlaneGeometry(3.2, 2.0);
+                const glassMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0x222244,
+                    transparent: true,
+                    opacity: 0.15,
+                    roughness: 0.02,
+                    metalness: 0.0,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.01,
+                    transmission: 0.8,
+                    thickness: 0.8,
+                    ior: 1.52,
+                    reflectivity: 0.95
+                });
+                
+                const logoMesh = new THREE.Mesh(logoGeometry, logoMaterial);
+                logoMesh.position.z = 0.02;
+                logoMesh.castShadow = true;
+                logoMesh.receiveShadow = true;
+                
+                const glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
+                glassMesh.castShadow = true;
+                glassMesh.receiveShadow = true;
+                
+                this.logoGroup.add(glassMesh);
+                this.logoGroup.add(logoMesh);
+                
+                // Remove loading indicator
+                document.getElementById('loading').style.display = 'none';
+                
+                console.log('✅ Fallback logo created');
+            }
+            
+            setupBackgroundEnvironmentMap(material) {
+                // Create environment map that reflects the actual background scene
+                const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+                
+                // Load the background texture and create environment sphere
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load('output/desert_night_supernatural_fixed.png', (backgroundTexture) => {
+                    // Create environment scene that matches the desert background
+                    const envScene = new THREE.Scene();
+                    
+                    // Create large sphere for environment mapping
+                    const envGeometry = new THREE.SphereGeometry(100, 64, 32);
+                    const envMaterial = new THREE.MeshBasicMaterial({
+                        map: backgroundTexture,
+                        side: THREE.BackSide  // Inward facing
+                    });
+                    const envSphere = new THREE.Mesh(envGeometry, envMaterial);
+                    envScene.add(envSphere);
+                    
+                    // Add crystalline lighting that matches the background
+                    const crystalColors = [
+                        0x4A9EFF,  // Crystal blue
+                        0x8A4FFF,  // Purple mystical
+                        0x4FFFA6,  // Green ethereal
+                        0xFF4A8F,  // Pink magical
+                        0xA6FF4A   // Lime supernatural
+                    ];
+                    
+                    crystalColors.forEach((color, i) => {
+                        const light = new THREE.PointLight(color, 2.0, 200);
+                        const angle = (i / crystalColors.length) * Math.PI * 2;
+                        light.position.set(
+                            Math.cos(angle) * 30,
+                            5 + Math.sin(i * 2) * 10,
+                            Math.sin(angle) * 30
+                        );
+                        envScene.add(light);
+                    });
+                    
+                    // Ambient lighting for the environment
+                    const ambientEnvLight = new THREE.AmbientLight(0x2244AA, 0.4);
+                    envScene.add(ambientEnvLight);
+                    
+                    // Generate cube environment map
+                    const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(512, {
+                        generateMipmaps: true,
+                        minFilter: THREE.LinearMipmapLinearFilter
+                    });
+                    
+                    this.cubeCamera = new THREE.CubeCamera(0.1, 200, cubeRenderTarget);
+                    this.cubeCamera.position.set(0, 0, 0);
+                    
+                    // Apply environment map to material
+                    material.envMap = cubeRenderTarget.texture;
+                    
+                    // Store environment scene for updates
+                    this.envScene = envScene;
+                    
+                    // Initial environment update
+                    this.updateEnvironmentMap();
+                    
+                    console.log('✅ Background environment map created');
+                });
+                
+                pmremGenerator.dispose();
+            }
+            
+            updateEnvironmentMap() {
+                if (this.cubeCamera && this.envScene && this.logoMesh) {
+                    // Temporarily hide logo to avoid self-reflection
+                    this.logoMesh.visible = false;
+                    
+                    // Update the cube camera with environment scene
+                    this.cubeCamera.update(this.renderer, this.envScene);
+                    
+                    // Show logo again
+                    this.logoMesh.visible = true;
+                }
+            }
+            
+            loadStockText() {
+                const loader = new FontLoader();
+                
+                // Use the default Three.js font from CDN
+                loader.load('https://cdn.jsdelivr.net/npm/three@0.169.0/examples/fonts/helvetiker_bold.typeface.json', 
+                    (font) => {
+                        const textGeometry = new TextGeometry(CONFIG.AMZN_STOCK, {
+                            font: font,
+                            size: 0.25,  // Reduced size
+                            depth: 0.06,  // Reduced depth
+                            curveSegments: 12,
+                            bevelEnabled: true,
+                            bevelThickness: 0.015,
+                            bevelSize: 0.008,
+                            bevelSegments: 5
+                        });
+                        
+                        // Center the text
+                        textGeometry.computeBoundingBox();
+                        const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+                        
+                        const textMaterial = new THREE.MeshPhysicalMaterial({
+                            color: 0xcccccc,
+                            metalness: 0.8,
+                            roughness: 0.2,
+                            clearcoat: 0.8,
+                            clearcoatRoughness: 0.1
+                        });
+                        
+                        this.stockText = new THREE.Mesh(textGeometry, textMaterial);
+                        this.stockText.position.set(-textWidth/2, -1.4, 0.1); // Closer to smaller logo
+                        this.stockText.castShadow = true;
+                        
+                        this.logoGroup.add(this.stockText);
+                    }
+                );
+            }
+            
+            update(deltaTime) {
+                // Slow rotation
+                this.logoGroup.rotation.y += 0.001;
+                
+                // Update controls
+                if (this.controls) {
+                    this.controls.update();
+                }
+                
+                // Periodically update environment map for reflections
+                this.envUpdateTimer = (this.envUpdateTimer || 0) + deltaTime;
+                if (this.envUpdateTimer > 3.0) { // Update every 3 seconds
+                    this.updateEnvironmentMap();
+                    this.envUpdateTimer = 0;
+                }
+            }
+        }
+        
+        // Initialize and run
+        function init() {
+            sceneManager = new SceneManager();
+            animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = clock.getDelta();
+            const elapsedTime = clock.getElapsedTime();
+            
+            // Update FPS counter
+            frameCount++;
+            if (elapsedTime - lastTime >= 1.0) {
+                fps = frameCount;
+                frameCount = 0;
+                lastTime = elapsedTime;
+                document.getElementById('fps').textContent = fps;
+            }
+            
+            // Update and render
+            sceneManager.update(deltaTime);
+            sceneManager.render();
+        }
+        
+        // Start the application
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

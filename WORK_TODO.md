@@ -1,7 +1,7 @@
 
 Tasks:
 - Create a single Web page containing a WebGL micro application that makes the available AWS image PNG slowly rotating on a glossy glass 3D pane with mouse control. 
-- Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti or trees or shooting stars or mountains). 
+- Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti, trees, shooting stars, mountains, giant plants or giant objects). 
 - The clear sky must be animated with visualy appealing sparkling realistic shooting stars/meteor shower effect. 
 - The ground must have a dynamic animated vapor particle system to create a surreal ambiance.
 
@@ -12,14 +12,14 @@ Implementation constraints:
 
 - Shooting stars scene, ground vapor particles 3D scene and AWS Logo/AMZN stock 3D one MUST be independents.
 - Mouse control only apply to the AWS Logo/AMZN stock 3D scene.
-- Shooting stars appear at random positions above the horizon line
+- Shooting stars appear at random positions above the horizon line in front of the viewer
 - Each meteor enters the atmosphere at different depths, creating varying trail thicknesses
 - All meteors flow toward a vanishing point located behind the camera position (off-screen in high-altitude atmosphere): This creates the effect of meteors streaming toward the viewer, not toward a visible point in the sky
 - Shooting stars are light-emitting glowing 3D lines, simulating the metor point and its long alpha blended trail with realistic color variations.
 
-- Make sure vapors are randomly appearing as animated realistic highly-visible neon-colored cloudy foggy vapor originating from ground level with ground-hugging behavior (do not use geometric based representation, use only textures and fragment shaders with Perlin noise). 
+- Make sure vapors are randomly appearing as animated realistic highly-visible neon-colored cloudy foggy vapor originating from ground level with ground-hugging behavior (do not use geometric based representation, use only textures and fragment shaders with blury noise). 
 - Make sure vapors are randomly appearing, are minimized and grow smoothly to their final size, positioned behind the AWS logo with proper perspective scaling (distant vapor smaller than closer ones). Each vapor cloud has randomly selected target transparency and display duration.
-- Make sure that vapors sticks to the ground never reaching the skyline
+- Make sure that vapors sticks close to the ground always below the skyline.
 - **Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the skyline coordinates to know where the shooting stars must appear
 
 Technical constraints:
