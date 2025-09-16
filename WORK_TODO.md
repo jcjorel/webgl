@@ -24,7 +24,7 @@ Implementation constraints:
 
 Technical constraints:
 - Use Three.js framework. 
-- Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option, HTTP header Cache-Control forbidding browser caching, no mime-type guessing). 
+- Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option, HTTP header Cache-Control forbidding browser caching, simple hard-coded mime-type guessing from file extension). 
 - Background image must fit automatically the web page size (real image size 1920x1088). 
 - Put all Javascript and CSS in the HTML page
 - Design it for Chrome latest version browser.
