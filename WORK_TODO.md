@@ -3,70 +3,92 @@
 
 ## Application synopsys
 
-- Create a single Web page containing a WebGL micro application that makes the available AWS image PNG slowly rotating on a glossy glass 3D pane with mouse control (limitless 360° grab rotation, pan ,zoom). 
-- Generate a background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti, trees, shooting stars, mountains, giant plants or giant objects. **CRITICAL:** The skyline must be free of any visual obstruction). 
+- A single Web page containing a WebGL micro application that makes the available AWS image PNG slowly rotating on a glossy glass 3D pane with mouse control (limitless 360° grab rotation, pan ,zoom). 
+- A background image of a desert at night, clear sky with stars with fantastical colorful supernatural vegetals (w/o cacti, trees, shooting stars, mountains, giant plants or giant objects. **CRITICAL:** The skyline must be flat and free of any visual obstruction). 
 - The clear sky must be animated with visualy appealing sparkling realistic shooting stars/meteor shower effect. 
 - The ground must have a dynamic animated vapor particle system to create a surreal ambiance.
 All design decisions must maximize Wow effect!
 
 ## Implementation constraints
 
-All the 3D scenes are displayed on top of each others in the order below:
-- Background landscape scene (opaque)
-- Shouting star scene (transparent)
-- Ground vapor scene (transparent)
-- AWS Logo & AMZN stock scene (transparent)
+All the visual components are displayed on top of each others in the order below:
+- Background landscape (2D opaque layer - implemented as single CSS image covering the whole viewport, no 3D complexity)
+- Shouting star (2D transparent layer - simulated meteors with 2D lines, no Three.js/WebGL use)
+- Ground vapor (2D transparent layer - simulated vapor clouds with 2D textures and perspective simulation, no Three.js/WebGL use)
+- AWS Logo & AMZN stock (transparent Three.js scene - single visual component using Three.js in the app)
 
-For the sake of simplicty, all the 3D scenes use their own optimized 3D coordinate system.
+Each visual component has its own HTML5 canvas.
 
-3D scenes (Shooting stars, ground vapor particles and AWS Logo/AMZN stock) MUST be independents.
-- Mouse control only apply to the AWS Logo/AMZN stock 3D scene.
+**CRITICAL: Mouse control only apply to the AWS Logo/AMZN stock 3D scene**.
 
-### Background landscape scene
+### Background landscape visual component
 
-- Generated image is a simply a 2D fixed background (i.e. not rotating with the logo or mouse controled) always fitting the whole screen
+- Generated image is a simply a 2D fixed background always fitting the whole screen
 
-### Shouting star scene
+### Shouting star visual component
 
-- Shooting stars appear at random positions above the skyline in front of the viewer
+- Shooting stars appear at random positions **always far above the viewer**
+- All meteors flow toward a infinite-away vanishing point located in the middle of night sky area of the background image and in front of the camera position. Meteors explode, with a very small transient light burst, before to reach this vanishing point as they can not go out the atmosphere.
 - Each meteor enters the atmosphere at different depths, creating varying trail thicknesses
-- All meteors flow toward a vanishing point located behind the camera position (off-screen in high-altitude atmosphere): This creates the effect of meteors streaming toward the viewer, not toward a visible point in the sky
-- Shooting stars are light-emitting glowing 3D lines, simulating the metor point and its long alpha blended trail with realistic color variations.
+- Shooting stars **MUST BE** implemented with light-emitting 2D lines, simulating a meteor point and its long alpha blended trail with realistic color variations.
+- The meteor point is glowing; the meteor trail is bright but not glowing
+- The meteor point and the start of the trail have same size.
+- When the meteor point disappears (i.e. meteor explosion), its trail continues to move up to the meteor disappearance point then fade vanish also
+- One shooting star spawns on average every 3 seconds
 
-### Ground vapor scene
+### Ground vapor visual component
 
-- Make sure vapors are randomly appearing as animated realistic highly-visible neon-colored vapor originating from ground level with ground-hugging behavior.
-- Vapor do not use geometric based representation, but use only textures and fragment shaders of cloudy foggy material. If vapor rendering uses noise generation, it must be then blured to avoid a "bee swarm" effect. 
+- Make sure vapors are randomly appearing as morphing realistic highly-visible neon-colored originating from visible ground level with ground-hugging behavior.
+- Use shape for vapor with texture-based rendering and prodedural blurred foggy shaders
 - Make sure vapors are randomly appearing slowly and smoothly and finally disappear slowly and smoothly
-- Vapor have proper perspective scaling (distant vapors smaller than closer ones). 
-- Each vapor cloud has randomly selected target transparency and display duration.
-- Make sure that vapors sticks close to the ground always below the skyline.
-- **Only once at design time (i.e not in the app)**, you will need to open and analyze the generated Nova Canvas image to locate the skyline coordinates to know where the shooting stars must appear
+- Make sure vapors are looming on the ground taking perpespective into account
+- vapors have proper perspective scaling (distant vapors smaller than closer ones). 
+- Each vapor has randomly selected target transparency and display duration.
+- One vapor appears randomly on average every 2 seconds and last randomly around 15 seconds
 
-### AWS Logo & AMZN stock scene
+### AWS Logo & AMZN stock visual component
 
 - Under the AWS logo and rotating with it, place an **hardcoded (i.e. not real-time)** AMZN stock value in $.
-- The AWS logo has strong metalness, is not transparent and reflect the surrounding background scene
+- The AWS logo has strong metalness, slight roughness, is not transparent and is slightly emissive.
+- AWS Logo PNG is placed on one side (i.e. **NOT inside**) of glass box
+- AWS logo glass box depth is 1/10 of its width
+- AWS Logo PNG is visible even from the backside
+- AWS Logo PNG is placed in normal position (i.e. not back flip)
+- The glass box is semi-transparent and allow vapor & shouting star to be seen if behind it
+- The AMZN stock displayed with 3D reflective and slightly emissive shape using few pixel extruded font
+- The logo and AMZN stock reflect the surrounding background scene
+- The whole component has **4 sources of intense lighting** illuminating it, located:
+* Left bottom (color of the left bottom ground)
+* Right bottom (color of the left rigth ground)
+* Upper (color of the sky dominant color)
+- In the exact axis of the camera FoV (white color)
+
 
 
 ## Technical constraints
 - Use Three.js framework. 
-- Use a python simple http server to serve the web page (port 8054 w/ TCP reuse option, HTTP header Cache-Control forbidding browser caching, simple hard-coded mime-type guessing from file extension). 
+- Use a python extremely simple http server to serve the web page (port 8054 w/ TCP reuse option, HTTP header Cache-Control forbidding browser caching, NEVER use existing guess_type() method but returns a **simple and dumb** hard-coded mime-type string guessed from file extension). 
 - Background image must fit automatically the web page size (real image size 1920x1088). 
-- Put all Javascript and CSS in the HTML page
+- Put all CSS in the HTML page. 
+- Put all Javascript in main.js, shouting_stars.js, ground_vapor.js and logo.js
 - Design it for Chrome latest version browser.
 
-## Testing / Debig
-To test and debug the solution, you will start the webserver then use the browser tool and will leverage the Chrome Developper tools logs. 
+## Testing / Debug
 
-## Build considerations
+To test and debug the solution, you will start the webserver then use the browser tool and will leverage the Chrome Developper tools logs.
+You will instrument the JavaScript code with logs to ease debugging.
 
-At build time, **so not part of the application codebase!**, we will use:
+## Build considerations and instructions for you
+
+Use:
 - Perplexity MCP Server to fetch the current AMZN stock value.
-- Context7 MCP server for right usage (ES6 module import map and initialization, best-practices...) of latest version of Three.js and OrbitControl.
+- Context7 MCP server for right usage (ES6 module import map and initialization, best-practices...) of latest version of Three.js and OrbitControl. **This is prefered source of truth for Three.js topics**
 - AWS Nova canvas MCP server to generate images.
-IMPORTANT: If you encounter integration issues with Three.js or OrbitControl, leverage Context7 & Perplexity to enrich your reasoning.
+IMPORTANT: If you encounter integration issues with Three.js or OrbitControls, leverage Context7 & Perplexity MCP servers to enrich your reasoning.
 
-## Developper interactions
+**Do not use MCP servers in the application! There are only used by you!**
 
-Ask questions to clarify ambiguities.
+# Your tasks
+
+Design, implement, test and debug this application.
+Start by performing technical and academic research on Three.js for logo visual component and for vapor/shooting star 2D simulation best practices.
