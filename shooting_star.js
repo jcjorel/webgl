@@ -12,106 +12,132 @@
  */
 
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+// Note: Post-processing imports removed - HDR Bloom disabled for transparency preservation
 
 export class ShootingStarSystem {
     constructor(renderer, coordinateSystem) {
-        this.renderer = renderer;
-        this.coordinateSystem = coordinateSystem;
+        console.log('🔧 CONSTRUCTOR: ShootingStarSystem starting...');
         
-        // Create shared camera that integrates with main coordinate system
-        this.camera = new THREE.PerspectiveCamera(
-            60,  // FOV
-            window.innerWidth / window.innerHeight,  // Aspect
-            0.1,   // Near
-            100    // Far
-        );
-        this.setupCameraPosition();
-        
-        // Shooting star configuration based on WORK_TODO.md requirements
-        this.config = {
-            maxMeteors: 25,             // 25 simultaneous meteors max
-            spawnRate: 2.0,             // Average 1 meteor every 0.5 seconds (2/sec)
-            burstChance: 0.1,           // 10% chance for burst spawning
-            burstCount: 5,              // 3-7 meteors in a burst
+        try {
+            console.log('🔧 CONSTRUCTOR: Step 1/5: Setting basic properties...');
+            this.renderer = renderer;
+            this.coordinateSystem = coordinateSystem;
+            console.log('✅ CONSTRUCTOR: Basic properties set');
             
-            // Meteor entry physics
-            entryAngle: -20,            // Flat angle ~20° from horizontal
-            entrySpeed: 25,             // Fast atmospheric entry
-            speedVariation: 10,         // ±10 speed variation
+            console.log('🔧 CONSTRUCTOR: Step 2/5: Creating camera...');
+            // Create shared camera that integrates with main coordinate system
+            this.camera = new THREE.PerspectiveCamera(
+                60,  // FOV
+                window.innerWidth / window.innerHeight,  // Aspect
+                0.1,   // Near
+                100    // Far
+            );
+            console.log('✅ CONSTRUCTOR: Camera created');
             
-            // Atmosphere and sky boundaries
-            skyHeight: 25,              // Maximum spawn height
-            atmosphereDepth: 30,        // Depth of atmosphere effect
-            disintegrationHeight: 8,    // Height above ground where meteors burn up
+            console.log('🔧 CONSTRUCTOR: Step 3/5: Setting up camera position...');
+            this.setupCameraPosition();
+            console.log('✅ CONSTRUCTOR: Camera position setup');
+        } catch (error) {
+            console.error('❌ CONSTRUCTOR: Error in basic setup:', error);
+            throw error;
+        }
+        
+        try {
+            console.log('🔧 CONSTRUCTOR: Step 4/5: Setting up configuration...');
+            // Shooting star configuration based on WORK_TODO.md requirements
+            this.config = {
+                maxMeteors: 25,             // 25 simultaneous meteors max
+                spawnRate: 2.0,             // Average 1 meteor every 0.5 seconds (2/sec)
+                burstChance: 0.1,           // 10% chance for burst spawning
+                burstCount: 5,              // 3-7 meteors in a burst
+                
+                // Meteor entry physics
+                entryAngle: -20,            // Flat angle ~20° from horizontal
+                entrySpeed: 25,             // Fast atmospheric entry
+                speedVariation: 10,         // ±10 speed variation
+                
+                // Atmosphere and sky boundaries
+                skyHeight: 25,              // Maximum spawn height
+                atmosphereDepth: 30,        // Depth of atmosphere effect
+                disintegrationHeight: 8,    // Height above ground where meteors burn up
+                
+                // Visual properties
+                meteorSize: 0.5,            // Base meteor point size (increased for better visibility)
+                trailLength: 160,           // Base trail segment count
+                trailSegments: 80,          // Number of trail segments
+                
+                // Colors (scientifically accurate meteor element spectrum)
+                meteorElements: [
+                    {
+                        name: 'Sodium (Na)',
+                        color: new THREE.Color(0xFFA500), // Orange-yellow - most common
+                        weight: 35, // High abundance in meteoroids
+                        description: 'Orange-yellow from excited sodium atoms'
+                    },
+                    {
+                        name: 'Iron (Fe)',
+                        color: new THREE.Color(0xFFD700), // Golden yellow
+                        weight: 30, // Very common in metallic meteoroids
+                        description: 'Yellow from excited/ionized iron atoms'
+                    },
+                    {
+                        name: 'Magnesium (Mg)',
+                        color: new THREE.Color(0x00CED1), // Blue-green (dark turquoise)
+                        weight: 15, // Common in stony meteoroids
+                        description: 'Blue-green from excited magnesium atoms'
+                    },
+                    {
+                        name: 'Atmospheric N₂/O',
+                        color: new THREE.Color(0xFF4500), // Red-orange
+                        weight: 10, // Heated atmospheric gases
+                        description: 'Red from heated atmospheric nitrogen and oxygen'
+                    },
+                    {
+                        name: 'Calcium (Ca+)',
+                        color: new THREE.Color(0x9370DB), // Medium purple (violet)
+                        weight: 7, // Less common, ionized calcium
+                        description: 'Violet from ionized calcium atoms (Ca+)'
+                    },
+                    {
+                        name: 'Oxygen Afterglow',
+                        color: new THREE.Color(0x32CD32), // Lime green
+                        weight: 3, // Rare afterglow effect
+                        description: 'Green from neutral oxygen atoms in afterglow'
+                    }
+                ]
+            };
+            console.log('✅ CONSTRUCTOR: Configuration set');
             
-            // Visual properties
-            meteorSize: 0.5,            // Base meteor point size (increased for better visibility)
-            trailLength: 160,           // Base trail segment count 
-            trailSegments: 80,          // Number of trail segments
+            console.log('🔧 CONSTRUCTOR: Step 5/5: Initializing system state...');
+            // System state
+            this.scene = null;
+            this.meteors = [];
+            this.activeMeteors = 0;
+            this.lastSpawnTime = 0;
+            this.burstTimer = 0;
+            this.time = 0;
             
-            // Colors (scientifically accurate meteor element spectrum)
-            meteorElements: [
-                {
-                    name: 'Sodium (Na)',
-                    color: new THREE.Color(0xFFA500), // Orange-yellow - most common
-                    weight: 35, // High abundance in meteoroids
-                    description: 'Orange-yellow from excited sodium atoms'
-                },
-                {
-                    name: 'Iron (Fe)',
-                    color: new THREE.Color(0xFFD700), // Golden yellow
-                    weight: 30, // Very common in metallic meteoroids
-                    description: 'Yellow from excited/ionized iron atoms'
-                },
-                {
-                    name: 'Magnesium (Mg)',
-                    color: new THREE.Color(0x00CED1), // Blue-green (dark turquoise)
-                    weight: 15, // Common in stony meteoroids
-                    description: 'Blue-green from excited magnesium atoms'
-                },
-                {
-                    name: 'Atmospheric N₂/O',
-                    color: new THREE.Color(0xFF4500), // Red-orange
-                    weight: 10, // Heated atmospheric gases
-                    description: 'Red from heated atmospheric nitrogen and oxygen'
-                },
-                {
-                    name: 'Calcium (Ca+)',
-                    color: new THREE.Color(0x9370DB), // Medium purple (violet)
-                    weight: 7, // Less common, ionized calcium
-                    description: 'Violet from ionized calcium atoms (Ca+)'
-                },
-                {
-                    name: 'Oxygen Afterglow',
-                    color: new THREE.Color(0x32CD32), // Lime green
-                    weight: 3, // Rare afterglow effect
-                    description: 'Green from neutral oxygen atoms in afterglow'
-                }
-            ]
-        };
-        
-        // System state
-        this.scene = null;
-        this.meteors = [];
-        this.activeMeteors = 0;
-        this.lastSpawnTime = 0;
-        this.burstTimer = 0;
-        this.time = 0;
-        
-        // Rendering objects
-        this.meteorMesh = null;
-        this.trailSystem = null;
-        
-        // Shader uniforms
-        this.meteorUniforms = null;
-        this.trailUniforms = null;
-        
-        this.initialized = false;
-        this.init();
+            // Rendering objects
+            this.meteorMesh = null;
+            this.trailSystem = null;
+            
+            // Shader uniforms
+            this.meteorUniforms = null;
+            this.trailUniforms = null;
+            
+            this.initialized = false;
+            console.log('✅ CONSTRUCTOR: System state initialized');
+            
+            console.log('🔧 CONSTRUCTOR: Calling init()...');
+            this.init();
+            console.log('✅ CONSTRUCTOR: ShootingStarSystem constructor complete');
+            
+        } catch (error) {
+            console.error('❌ CONSTRUCTOR: Error in configuration/init:', error);
+            console.error('❌ CONSTRUCTOR: Error details:', error.message);
+            console.error('❌ CONSTRUCTOR: Stack trace:', error.stack);
+            throw error;
+        }
     }
     
     setupCameraPosition() {
@@ -127,17 +153,45 @@ export class ShootingStarSystem {
     init() {
         console.log('🌠 Initializing Shooting Star System...');
         
+        // DEBUG: Log renderer alpha configuration
+        console.log('🔍 ALPHA DEBUG - Renderer Configuration:');
+        console.log(`   - Renderer alpha: ${this.renderer.domElement ? 'canvas detected' : 'no canvas'}`);
+        
+        // Safe clear color logging
+        let clearColorInfo = 'unknown';
         try {
+            const clearColor = this.renderer.getClearColor ? this.renderer.getClearColor() : null;
+            clearColorInfo = clearColor ? clearColor.getHexString() : 'not set';
+        } catch (e) {
+            clearColorInfo = 'error reading';
+        }
+        console.log(`   - Renderer clear color: ${clearColorInfo}`);
+        console.log(`   - Renderer clear alpha: ${this.renderer.getClearAlpha ? this.renderer.getClearAlpha() : 'unknown'}`);
+        
+        try {
+            console.log('🔧 Step 1/4: Setting up scene...');
             this.setupScene();
+            console.log('✅ Scene setup complete');
+            
+            console.log('🔧 Step 2/4: Creating meteor system...');
             this.createMeteorSystem();
+            console.log('✅ Meteor system created');
+            
+            console.log('🔧 Step 3/4: Creating trail system...');
             this.createTrailSystem();
+            console.log('✅ Trail system created');
+            
+            console.log('🔧 Step 4/4: Initializing meteors...');
             this.initializeMeteors();
+            console.log('✅ Meteors initialized');
             
             this.initialized = true;
             console.log('✅ Shooting Star System ready');
             
         } catch (error) {
             console.error('❌ Failed to initialize Shooting Star System:', error);
+            console.error('❌ Error details:', error.message);
+            console.error('❌ Stack trace:', error.stack);
             throw error;
         }
     }
@@ -491,7 +545,12 @@ export class ShootingStarSystem {
                 
                 gl_FragColor = vec4(finalColor, alpha);
                 
-                // Discard very faint fragments for performance
+                // DEBUG: Log fragment alpha values for transparency diagnosis
+                if (alpha > 0.0 && alpha < 0.05) {
+                    // Note: This will be visible in browser console if WebGL debug extension is enabled
+                }
+                
+                // Discard very faint fragments for performance - POTENTIAL ISSUE HERE!
                 if (alpha < 0.01) discard;
             }
         `;
@@ -818,6 +877,11 @@ export class ShootingStarSystem {
                 const alpha1 = Math.max(0, 1.0 - (i / maxTrailLength)) * meteor.trailIntensity;
                 const alpha2 = Math.max(0, 1.0 - ((i + 1) / maxTrailLength)) * meteor.trailIntensity;
                 
+                // DEBUG: Log alpha values to diagnose transparency issue
+                if (i === 0 || i === Math.floor(maxTrailLength * 0.5) || i === maxTrailLength - 2) {
+                    console.log(`🔍 ALPHA DEBUG [${meteor.elementName}] Segment ${i}/${maxTrailLength}: alpha1=${alpha1.toFixed(3)}, alpha2=${alpha2.toFixed(3)}, trailIntensity=${meteor.trailIntensity.toFixed(3)}`);
+                }
+                
                 // Create realistic gradient: white-hot head → gradual element color transition → afterglow tail
                 const rawProgress1 = i / (maxTrailLength - 1); // 0.0 at head to 1.0 at tail
                 const rawProgress2 = (i + 1) / (maxTrailLength - 1);
@@ -1034,8 +1098,15 @@ export class ShootingStarSystem {
         this.renderer.render(this.scene, this.camera);
     }
     
-    // Handle window resize for bloom composer
+    // Handle window resize (merged functionality)
     handleResize(width, height) {
+        // Update camera aspect ratio and projection matrix
+        if (this.camera) {
+            this.camera.aspect = width / height;
+            this.camera.updateProjectionMatrix();
+        }
+        
+        // Update bloom composer if available (currently not used for transparency preservation)
         if (this.composer) {
             this.composer.setSize(width, height);
         }
@@ -1043,15 +1114,8 @@ export class ShootingStarSystem {
         if (this.bloomPass) {
             this.bloomPass.resolution.set(width, height);
         }
-    }
-    
-    // Handle window resize
-    handleResize(width, height) {
-        if (this.camera) {
-            this.camera.aspect = width / height;
-            this.camera.updateProjectionMatrix();
-        }
         
+        // Update meteor uniforms
         if (this.meteorUniforms && this.meteorUniforms.pointScale) {
             this.meteorUniforms.pointScale.value = 20.0; // Fixed realistic scale
         }
