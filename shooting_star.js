@@ -49,7 +49,7 @@ export class ShootingStarSystem {
             disintegrationHeight: 8,    // Height above ground where meteors burn up
             
             // Visual properties
-            meteorSize: 0.15,           // Base meteor point size
+            meteorSize: 0.8,            // Base meteor point size (increased for better visibility)
             trailLength: 120,           // Base trail segment count
             trailSegments: 80,          // Number of trail segments
             
@@ -161,12 +161,12 @@ export class ShootingStarSystem {
         meteorGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
         meteorGeometry.setAttribute('intensity', new THREE.BufferAttribute(intensities, 1));
         
-        // Enhanced meteor shader uniforms with simplified approach
+        // Enhanced meteor shader uniforms with realistic scaling
         this.meteorUniforms = {
             time: { value: 0.0 },
             atmosphereHeight: { value: this.config.skyHeight },
             glowIntensity: { value: 4.0 }, // Increased for better visibility
-            pointScale: { value: window.innerHeight / 2.0 } // Scale for point size
+            pointScale: { value: 20.0 } // Realistic point size scaling
         };
         
         // Meteor shader material using Points
@@ -219,12 +219,23 @@ export class ShootingStarSystem {
         trailGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         trailGeometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
         
-        // Trail material using Lines
-        const trailMaterial = new THREE.LineBasicMaterial({
-            vertexColors: true,
+        // Trail shader uniforms
+        this.trailUniforms = {
+            time: { value: 0.0 },
+            trailSegments: { value: 15.0 } // Segments per meteor trail
+        };
+        
+        // Trail material using custom shaders for proper alpha gradient
+        const trailMaterial = new THREE.ShaderMaterial({
+            uniforms: this.trailUniforms,
+            vertexShader: this.getTrailVertexShader(),
+            fragmentShader: this.getTrailFragmentShader(),
+            
             transparent: true,
+            depthWrite: false,
+            depthTest: true,
             blending: THREE.AdditiveBlending,
-            linewidth: 2 // Note: only works on some platforms
+            vertexColors: true
         });
         
         this.trailSystem = new THREE.LineSegments(trailGeometry, trailMaterial);
@@ -283,10 +294,10 @@ export class ShootingStarSystem {
                 vec4 worldPosition = modelViewMatrix * vec4(position, 1.0);
                 gl_Position = projectionMatrix * worldPosition;
                 
-                // Calculate point size with atmospheric glow and distance scaling
+                // Calculate realistic point size with atmospheric glow and distance scaling
                 float distance = length(worldPosition.xyz);
-                float sizeScale = size * atmosphericGlow * pointScale / (1.0 + distance * 0.1);
-                gl_PointSize = clamp(sizeScale, 2.0, 150.0);
+                float sizeScale = size * atmosphericGlow * pointScale / (1.0 + distance * 0.05);
+                gl_PointSize = clamp(sizeScale, 1.0, 25.0); // Realistic meteor point size range
                 
                 // Pass to fragment shader
                 vColor = color;  // Built-in color attribute
@@ -369,50 +380,44 @@ export class ShootingStarSystem {
     
     getTrailVertexShader() {
         return `
-            precision highp float;
+            // Built-in attributes
+            // attribute vec3 position; - provided by Three.js
+            // attribute vec3 color; - provided by Three.js when vertexColors = true
             
-            attribute vec3 position;
-            attribute vec3 instancePosition;
-            attribute vec4 instanceData;     // length, width, age, intensity
-            attribute vec4 instanceColor;
-            attribute vec3 instanceDirection;
+            // Custom attributes for trail alpha
+            attribute float alpha;
             
-            uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+            // Built-in uniforms
+            // uniform mat4 modelViewMatrix; - provided by Three.js
+            // uniform mat4 projectionMatrix; - provided by Three.js
+            
+            // Custom uniforms
             uniform float time;
             uniform float trailSegments;
             
-            varying vec4 vColor;
+            // Varying to fragment shader
+            varying vec3 vColor;
+            varying float vAlpha;
             varying float vDistanceAlongTrail;
-            varying float vIntensity;
             
             void main() {
-                float trailLength = instanceData.x;
-                float trailWidth = instanceData.y;
-                float intensity = instanceData.w;
-                
-                if (intensity <= 0.0) {
+                // Skip inactive trail segments (alpha = 0)
+                if (alpha <= 0.0) {
                     gl_Position = vec4(0, 0, 0, 0);
                     return;
                 }
                 
-                // Calculate position along trail
-                float segmentIndex = position.z;
-                vDistanceAlongTrail = abs(segmentIndex) / trailSegments;
-                
-                // Create trail geometry following meteor direction
-                vec3 trailPosition = instancePosition + instanceDirection * segmentIndex * trailLength;
-                
-                // Add some width to the trail (billboard effect)
-                vec3 right = normalize(cross(instanceDirection, vec3(0, 1, 0)));
-                trailPosition += right * position.x * trailWidth;
-                
-                vec4 worldPosition = modelViewMatrix * vec4(trailPosition, 1.0);
+                // Transform position
+                vec4 worldPosition = modelViewMatrix * vec4(position, 1.0);
                 gl_Position = projectionMatrix * worldPosition;
                 
+                // Calculate distance along trail for gradient effect
+                // Use vertex index to determine position in trail
+                vDistanceAlongTrail = alpha; // Alpha already contains fade value from updateTrailData
+                
                 // Pass to fragment shader
-                vColor = instanceColor;
-                vIntensity = intensity;
+                vColor = color;  // Built-in color attribute
+                vAlpha = alpha;
             }
         `;
     }
@@ -421,44 +426,39 @@ export class ShootingStarSystem {
         return `
             precision highp float;
             
-            varying vec4 vColor;
+            // From vertex shader
+            varying vec3 vColor;
+            varying float vAlpha;
             varying float vDistanceAlongTrail;
-            varying float vIntensity;
             
             void main() {
-                // Enhanced volumetric trail with multiple fade layers
-                float distanceSquared = vDistanceAlongTrail * vDistanceAlongTrail;
+                // Skip inactive trail segments
+                if (vAlpha <= 0.0) {
+                    discard;
+                }
                 
-                // Core trail - sharp falloff
-                float coreTrail = exp(-vDistanceAlongTrail * 4.0);
+                // Enhanced trail with multiple glow layers for realistic meteor trail
+                // Core trail - bright center line
+                float coreTrail = 1.0;
                 
-                // Outer glow - softer falloff
-                float glowTrail = exp(-vDistanceAlongTrail * 2.0) * 0.6;
+                // Atmospheric glow - softer outer glow
+                float glowTrail = 0.7;
                 
-                // Atmospheric scattering effect
-                float scatterTrail = exp(-vDistanceAlongTrail * 1.0) * 0.3;
+                // Combine trail layers with alpha fade
+                float trailIntensity = coreTrail + glowTrail;
                 
-                // Combine trail layers
-                float trailFade = coreTrail + glowTrail + scatterTrail;
+                // Apply the alpha gradient (strong at meteor head, fading to tail)
+                float alpha = vAlpha * trailIntensity;
                 
-                // Add subtle noise for organic variation
-                float noise = fract(sin(vDistanceAlongTrail * 47.0) * 43758.5453);
-                trailFade *= (0.85 + noise * 0.15);
+                // Enhanced trail brightness for visibility
+                vec3 finalColor = vColor * (1.5 + alpha * 0.5);
                 
-                // Width-based alpha falloff for volume effect
-                vec2 uv = gl_FragCoord.xy; // Use fragment position for width calculation
-                float widthFalloff = 1.0 - smoothstep(0.0, 1.0, length(uv - 0.5) * 2.0);
-                
-                float alpha = trailFade * vIntensity * vColor.a * widthFalloff;
-                
-                // Enhanced trail brightness with atmospheric glow
-                vec3 finalColor = vColor.rgb * (1.2 + vIntensity * 0.8);
-                
-                // Add slight blue shift for atmospheric scattering
-                finalColor += vec3(0.1, 0.15, 0.3) * scatterTrail * vIntensity;
+                // Add slight atmospheric scattering for realism
+                finalColor += vec3(0.1, 0.15, 0.3) * alpha * 0.3;
                 
                 gl_FragColor = vec4(finalColor, alpha);
                 
+                // Discard very faint fragments for performance
                 if (alpha < 0.01) discard;
             }
         `;
@@ -575,8 +575,8 @@ export class ShootingStarSystem {
         colors[i3 + 1] = meteor.color.g;
         colors[i3 + 2] = meteor.color.b;
         
-        // Size and intensity (0 = inactive)
-        sizes[index] = meteor.active ? meteor.size * 50 : 0; // Scale up for visibility
+        // Size and intensity (0 = inactive) - realistic meteor point size
+        sizes[index] = meteor.active ? meteor.size : 0; // Realistic size without excessive scaling
         intensities[index] = meteor.active ? meteor.intensity : 0;
         
         // Update trail if it exists
@@ -617,9 +617,10 @@ export class ShootingStarSystem {
             return;
         }
         
-        // Update trail geometry with line segments
+        // Update trail geometry with line segments and alpha gradient
         const positions = geometry.attributes.position.array;
         const colors = geometry.attributes.color.array;
+        const alphas = geometry.attributes.alpha.array;
         
         const startIndex = index * maxTrailLength;
         
@@ -627,6 +628,7 @@ export class ShootingStarSystem {
         for (let i = 0; i < maxTrailLength - 1; i++) {
             const segmentIndex = startIndex + i;
             const i6 = segmentIndex * 6; // 2 points per segment, 3 coords per point
+            const i2 = segmentIndex * 2; // 2 alpha values per segment
             
             if (i < meteor.trailHistory.length - 1) {
                 const point1 = meteor.trailHistory[i];
@@ -642,19 +644,22 @@ export class ShootingStarSystem {
                 positions[i6 + 4] = point2.position.y;
                 positions[i6 + 5] = point2.position.z;
                 
-                // Colors for both points (fade along trail)
-                const fade1 = 1.0 - (i / maxTrailLength);
-                const fade2 = 1.0 - ((i + 1) / maxTrailLength);
+                // Alpha gradient: strong at meteor head (1.0), fading to tail (0.0)
+                const alpha1 = Math.max(0, 1.0 - (i / maxTrailLength)) * meteor.trailIntensity;
+                const alpha2 = Math.max(0, 1.0 - ((i + 1) / maxTrailLength)) * meteor.trailIntensity;
                 
-                // Start point color
-                colors[i6 + 0] = meteor.color.r * fade1;
-                colors[i6 + 1] = meteor.color.g * fade1;
-                colors[i6 + 2] = meteor.color.b * fade1;
+                // Colors for both points (maintain brightness)
+                colors[i6 + 0] = meteor.color.r;
+                colors[i6 + 1] = meteor.color.g;
+                colors[i6 + 2] = meteor.color.b;
                 
-                // End point color
-                colors[i6 + 3] = meteor.color.r * fade2;
-                colors[i6 + 4] = meteor.color.g * fade2;
-                colors[i6 + 5] = meteor.color.b * fade2;
+                colors[i6 + 3] = meteor.color.r;
+                colors[i6 + 4] = meteor.color.g;
+                colors[i6 + 5] = meteor.color.b;
+                
+                // Alpha values for gradient effect
+                alphas[i2 + 0] = alpha1; // Start point alpha
+                alphas[i2 + 1] = alpha2; // End point alpha
                 
             } else {
                 // Inactive segment - move off-screen
@@ -662,6 +667,10 @@ export class ShootingStarSystem {
                     positions[i6 + j] = (j % 3 === 1) ? -100 : 0; // Y = -100, X,Z = 0
                     colors[i6 + j] = 0;
                 }
+                
+                // Set alpha to 0 for inactive segments
+                alphas[i2 + 0] = 0.0;
+                alphas[i2 + 1] = 0.0;
             }
         }
     }
@@ -671,7 +680,11 @@ export class ShootingStarSystem {
         
         this.time = elapsedTime;
         this.meteorUniforms.time.value = this.time;
-        // No trail uniforms in simplified system
+        
+        // Update trail uniforms
+        if (this.trailUniforms) {
+            this.trailUniforms.time.value = this.time;
+        }
         
         // Update camera position for LOD calculations (removed - not needed for Points system)
         // this.meteorUniforms.cameraPosition.value.copy(this.camera.position);
@@ -711,6 +724,9 @@ export class ShootingStarSystem {
             if (this.trailSystem) {
                 this.trailSystem.geometry.attributes.position.needsUpdate = true;
                 this.trailSystem.geometry.attributes.color.needsUpdate = true;
+                if (this.trailSystem.geometry.attributes.alpha) {
+                    this.trailSystem.geometry.attributes.alpha.needsUpdate = true;
+                }
             }
         }
     }
@@ -849,7 +865,7 @@ export class ShootingStarSystem {
         }
         
         if (this.meteorUniforms && this.meteorUniforms.pointScale) {
-            this.meteorUniforms.pointScale.value = height / 2.0;
+            this.meteorUniforms.pointScale.value = 20.0; // Fixed realistic scale
         }
     }
     

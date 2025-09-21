@@ -39,7 +39,7 @@ Note: A shooting star is a meteor point and its long alpha blended trail.
 - All meteors have strictly parallel (w/ flat angle ~20°) trajectory entry in the 3D modeled atmosphere
 - Shooting stars fly with 3D sky and atmosphere vectors that align with viewer perspective, to be visible
 - Shooting stars are flying in the 3D sky and never reach the background image skyline
-- Shooting stars **MUST** simulate realisticly a meteor point and its **long alpha blended** trail
+- Shooting stars **MUST** simulate realisticly a meteor point and its **long gradient-alpha blended** trail
 - Shooting stars have realistic color variations.
 - Shooting star trail length depends on the meteor point altitude (i.e. longer trail for higher altitude)
 - The meteor point is strongly glowing; the glowing get quickly weaker along the trail until it vanishes at the end of the trail.
