@@ -50,7 +50,7 @@ export class ShootingStarSystem {
             
             // Visual properties
             meteorSize: 0.8,            // Base meteor point size (increased for better visibility)
-            trailLength: 120,           // Base trail segment count
+            trailLength: 160,           // Base trail segment count 
             trailSegments: 80,          // Number of trail segments
             
             // Colors (realistic meteor spectrum)
