@@ -53,14 +53,44 @@ export class ShootingStarSystem {
             trailLength: 160,           // Base trail segment count 
             trailSegments: 80,          // Number of trail segments
             
-            // Colors (realistic meteor spectrum)
-            meteorColors: [
-                new THREE.Color(0xFFFFFF), // White (hottest)
-                new THREE.Color(0xFFEE88), // Yellow-white
-                new THREE.Color(0xFF8844), // Orange
-                new THREE.Color(0xFF4422), // Red-orange
-                new THREE.Color(0x8844FF), // Blue (rare, very hot)
-                new THREE.Color(0x44FF88)  // Green (magnesium)
+            // Colors (scientifically accurate meteor element spectrum)
+            meteorElements: [
+                {
+                    name: 'Sodium (Na)',
+                    color: new THREE.Color(0xFFA500), // Orange-yellow - most common
+                    weight: 35, // High abundance in meteoroids
+                    description: 'Orange-yellow from excited sodium atoms'
+                },
+                {
+                    name: 'Iron (Fe)',
+                    color: new THREE.Color(0xFFD700), // Golden yellow
+                    weight: 30, // Very common in metallic meteoroids
+                    description: 'Yellow from excited/ionized iron atoms'
+                },
+                {
+                    name: 'Magnesium (Mg)',
+                    color: new THREE.Color(0x00CED1), // Blue-green (dark turquoise)
+                    weight: 15, // Common in stony meteoroids
+                    description: 'Blue-green from excited magnesium atoms'
+                },
+                {
+                    name: 'Atmospheric N₂/O',
+                    color: new THREE.Color(0xFF4500), // Red-orange
+                    weight: 10, // Heated atmospheric gases
+                    description: 'Red from heated atmospheric nitrogen and oxygen'
+                },
+                {
+                    name: 'Calcium (Ca+)',
+                    color: new THREE.Color(0x9370DB), // Medium purple (violet)
+                    weight: 7, // Less common, ionized calcium
+                    description: 'Violet from ionized calcium atoms (Ca+)'
+                },
+                {
+                    name: 'Oxygen Afterglow',
+                    color: new THREE.Color(0x32CD32), // Lime green
+                    weight: 3, // Rare afterglow effect
+                    description: 'Green from neutral oxygen atoms in afterglow'
+                }
             ]
         };
         
@@ -500,6 +530,77 @@ export class ShootingStarSystem {
         this.activeMeteors = 0;
     }
     
+    selectMeteorElement() {
+        // Weighted random selection based on element abundance in meteoroids
+        const totalWeight = this.config.meteorElements.reduce((sum, element) => sum + element.weight, 0);
+        let random = Math.random() * totalWeight;
+        
+        for (const element of this.config.meteorElements) {
+            random -= element.weight;
+            if (random <= 0) {
+                return element;
+            }
+        }
+        
+        // Fallback to most common element (should never reach here)
+        return this.config.meteorElements[0]; // Sodium
+    }
+    
+    applyVelocityColorEffects(meteor, speed) {
+        // Research: Fast meteors show metal colors, slow meteors show atmospheric red
+        const baseSpeed = this.config.entrySpeed;
+        const velocityFactor = speed / baseSpeed; // Normalized velocity (1.0 = base speed)
+        
+        // For slow meteors (< 0.8x base speed), blend toward atmospheric red
+        if (velocityFactor < 0.8) {
+            const atmosphericRed = new THREE.Color(0xFF4500); // Red-orange from heated air
+            const blendAmount = (0.8 - velocityFactor) / 0.8 * 0.4; // Max 40% blend for very slow
+            meteor.color.lerp(atmosphericRed, blendAmount);
+            
+            console.log(`   └─ Slow meteor: blended ${(blendAmount * 100).toFixed(1)}% atmospheric red`);
+        }
+        
+        // For very fast meteors (> 1.3x base speed), intensify metallic colors
+        else if (velocityFactor > 1.3) {
+            const intensification = Math.min((velocityFactor - 1.3) / 0.7, 0.3); // Max 30% intensification
+            meteor.color.multiplyScalar(1.0 + intensification);
+            
+            console.log(`   └─ Fast meteor: intensified metallic color by ${(intensification * 100).toFixed(1)}%`);
+        }
+    }
+    
+    generateAfterglowColors(baseColor, trailLength) {
+        // Create color progression from hot metallic head to cooler atmospheric tail
+        const colors = [];
+        const afterglowColor = new THREE.Color(0x8B4513); // Brownish afterglow (cooling trail)
+        
+        for (let i = 0; i < trailLength; i++) {
+            const progress = i / (trailLength - 1); // 0.0 at head to 1.0 at tail
+            
+            // Color transition: Hot metal → Atmospheric glow → Cool afterglow
+            const color = new THREE.Color().copy(baseColor);
+            
+            if (progress < 0.3) {
+                // First 30%: Keep metallic color but gradually dim
+                const dimFactor = 1.0 - (progress / 0.3) * 0.2; // Dim by max 20%
+                color.multiplyScalar(dimFactor);
+            } else if (progress < 0.7) {
+                // Middle 40%: Transition to atmospheric orange-red
+                const atmosphericColor = new THREE.Color(0xFF6B35); // Orange-red atmospheric
+                const blendFactor = (progress - 0.3) / 0.4;
+                color.lerp(atmosphericColor, blendFactor * 0.6);
+            } else {
+                // Final 30%: Cool to brownish afterglow
+                const blendFactor = (progress - 0.7) / 0.3;
+                color.lerp(afterglowColor, blendFactor * 0.8);
+            }
+            
+            colors.push(color.r, color.g, color.b);
+        }
+        
+        return colors;
+    }
+    
     spawnMeteor() {
         // Find inactive meteor
         const meteorIndex = this.meteors.findIndex(m => !m.active);
@@ -537,9 +638,11 @@ export class ShootingStarSystem {
         meteor.size = this.config.meteorSize * (0.5 + Math.random() * 1.5);
         meteor.intensity = 0.8 + Math.random() * 0.4;
         
-        // Random meteor color based on composition
-        const colorIndex = Math.floor(Math.random() * this.config.meteorColors.length);
-        meteor.color.copy(this.config.meteorColors[colorIndex]);
+        // Weighted random meteor element selection based on abundance
+        const selectedElement = this.selectMeteorElement();
+        meteor.color.copy(selectedElement.color);
+        meteor.elementName = selectedElement.name;
+        meteor.elementDescription = selectedElement.description;
         
         // Trail properties based on altitude
         const altitude = meteor.position.y / this.config.skyHeight;
@@ -550,10 +653,18 @@ export class ShootingStarSystem {
         meteor.atmosphericDrag = 0.995 + Math.random() * 0.004;
         meteor.heatingFactor = 1.0 + altitude * 0.5;
         
+        // Apply velocity-based color modification
+        this.applyVelocityColorEffects(meteor, speed);
+        
+        // Generate afterglow trail colors for enhanced realism
+        const trailColors = this.generateAfterglowColors(meteor.color, Math.floor(meteor.trailLength));
+        meteor.trailColors = trailColors; // Store for trail rendering
+        
         this.activeMeteors++;
         this.updateMeteorInstanceData(meteorIndex, meteor);
         
-        console.log(`🌟 Meteor spawned at altitude ${meteor.position.y.toFixed(1)} with ${meteor.trailLength.toFixed(0)} trail length`);
+        console.log(`🌟 ${selectedElement.name} meteor spawned at altitude ${meteor.position.y.toFixed(1)} with ${meteor.trailLength.toFixed(0)} trail length (speed: ${speed.toFixed(1)})`);
+        console.log(`   └─ Afterglow trail: ${trailColors.length / 3} color segments with progression`);
     }
     
     updateMeteorInstanceData(index, meteor) {
@@ -648,14 +759,37 @@ export class ShootingStarSystem {
                 const alpha1 = Math.max(0, 1.0 - (i / maxTrailLength)) * meteor.trailIntensity;
                 const alpha2 = Math.max(0, 1.0 - ((i + 1) / maxTrailLength)) * meteor.trailIntensity;
                 
-                // Colors for both points (maintain brightness)
-                colors[i6 + 0] = meteor.color.r;
-                colors[i6 + 1] = meteor.color.g;
-                colors[i6 + 2] = meteor.color.b;
+                // Use afterglow colors if available, otherwise use base meteor color
+                let color1, color2;
+                if (meteor.trailColors && meteor.trailColors.length > i * 3 + 2) {
+                    // Color progression: Hot metal → Atmospheric glow → Cool afterglow
+                    const colorIndex1 = Math.min(i * 3, meteor.trailColors.length - 3);
+                    const colorIndex2 = Math.min((i + 1) * 3, meteor.trailColors.length - 3);
+                    
+                    color1 = {
+                        r: meteor.trailColors[colorIndex1],
+                        g: meteor.trailColors[colorIndex1 + 1],
+                        b: meteor.trailColors[colorIndex1 + 2]
+                    };
+                    
+                    color2 = {
+                        r: meteor.trailColors[colorIndex2],
+                        g: meteor.trailColors[colorIndex2 + 1],
+                        b: meteor.trailColors[colorIndex2 + 2]
+                    };
+                } else {
+                    // Fallback to base meteor color
+                    color1 = color2 = meteor.color;
+                }
                 
-                colors[i6 + 3] = meteor.color.r;
-                colors[i6 + 4] = meteor.color.g;
-                colors[i6 + 5] = meteor.color.b;
+                // Colors for both points with afterglow progression
+                colors[i6 + 0] = color1.r;
+                colors[i6 + 1] = color1.g;
+                colors[i6 + 2] = color1.b;
+                
+                colors[i6 + 3] = color2.r;
+                colors[i6 + 4] = color2.g;
+                colors[i6 + 5] = color2.b;
                 
                 // Alpha values for gradient effect
                 alphas[i2 + 0] = alpha1; // Start point alpha
