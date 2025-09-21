@@ -49,7 +49,7 @@ export class ShootingStarSystem {
             disintegrationHeight: 8,    // Height above ground where meteors burn up
             
             // Visual properties
-            meteorSize: 0.8,            // Base meteor point size (increased for better visibility)
+            meteorSize: 0.5,            // Base meteor point size (increased for better visibility)
             trailLength: 160,           // Base trail segment count 
             trailSegments: 80,          // Number of trail segments
             
@@ -224,25 +224,28 @@ export class ShootingStarSystem {
         const trailGeometry = new THREE.BufferGeometry();
         
         // Create positions for trail lines (each meteor has multiple trail points)
-        const trailPointsPerMeteor = 15; // Trail segments per meteor
+        const trailPointsPerMeteor = 30; // Increased segments for smoother gradients
         const totalPoints = this.config.maxMeteors * trailPointsPerMeteor;
         
-        const positions = new Float32Array(totalPoints * 3);
-        const colors = new Float32Array(totalPoints * 3);
-        const alphas = new Float32Array(totalPoints); // Custom alpha channel
+        // LineSegments needs 2 points per segment, so we need 2x positions/colors and alphas
+        const positions = new Float32Array(totalPoints * 6); // 2 points per segment, 3 coords each
+        const colors = new Float32Array(totalPoints * 6); // 2 colors per segment, 3 components each
+        const alphas = new Float32Array(totalPoints * 2); // 2 alpha values per segment
         
-        // Initialize all trail points as inactive (off-screen)
+        // Initialize all trail segments as inactive (off-screen)
+        // Each segment needs 2 points (6 position values, 6 color values, 2 alpha values)
         for (let i = 0; i < totalPoints; i++) {
-            const i3 = i * 3;
-            positions[i3] = 0;
-            positions[i3 + 1] = -100; // Off-screen
-            positions[i3 + 2] = 0;
+            const i6 = i * 6; // 2 points per segment, 3 coords each
+            const i2 = i * 2; // 2 alpha values per segment
             
-            colors[i3] = 1.0;
-            colors[i3 + 1] = 1.0;
-            colors[i3 + 2] = 1.0;
+            // Initialize both points of the segment off-screen
+            for (let j = 0; j < 6; j++) {
+                positions[i6 + j] = (j % 3 === 1) ? -100 : 0; // Y = -100, X,Z = 0
+                colors[i6 + j] = 1.0;
+            }
             
-            alphas[i] = 0.0; // Transparent
+            alphas[i2 + 0] = 0.0; // Start point alpha
+            alphas[i2 + 1] = 0.0; // End point alpha
         }
         
         trailGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -252,7 +255,7 @@ export class ShootingStarSystem {
         // Trail shader uniforms
         this.trailUniforms = {
             time: { value: 0.0 },
-            trailSegments: { value: 15.0 } // Segments per meteor trail
+            trailSegments: { value: 30.0 } // Updated segments per meteor trail
         };
         
         // Trail material using custom shaders for proper alpha gradient
@@ -264,7 +267,7 @@ export class ShootingStarSystem {
             transparent: true,
             depthWrite: false,
             depthTest: true,
-            blending: THREE.AdditiveBlending,
+            blending: THREE.NormalBlending, // CRITICAL: Use NormalBlending for proper alpha gradients
             vertexColors: true
         });
         
@@ -280,7 +283,7 @@ export class ShootingStarSystem {
         
         this.scene.add(this.trailSystem);
         
-        console.log(`🌟 Trail system: ${this.config.maxMeteors} meteors × ${trailPointsPerMeteor} points = ${totalPoints} trail points`);
+        console.log(`🌟 Trail system: ${this.config.maxMeteors} meteors × ${trailPointsPerMeteor} segments = ${totalPoints} total segments`);
     }
     
     getMeteorVertexShader() {
@@ -601,6 +604,62 @@ export class ShootingStarSystem {
         return colors;
     }
     
+    calculateTrailColor(progress, whiteStageEnd, elementStageEnd, meteor) {
+        // 3-Stage Scientific Meteor Trail Color Progression
+        // Stage 1 (0-10%): Pure white-hot plasma
+        // Stage 2 (10-50%): Progressive white → element color transition
+        // Stage 3 (50-100%): Progressive element color → cooling afterglow transition
+        
+        if (progress <= whiteStageEnd) {
+            // Stage 1: Pure white-hot plasma (0-10%)
+            return { r: 1.0, g: 1.0, b: 1.0 };
+            
+        } else if (progress <= elementStageEnd) {
+            // Stage 2: Progressive white → element color transition (10-50%)
+            const stageProgress = (progress - whiteStageEnd) / (elementStageEnd - whiteStageEnd);
+            const white = { r: 1.0, g: 1.0, b: 1.0 };
+            const element = meteor.color;
+            
+            return {
+                r: white.r * (1.0 - stageProgress) + element.r * stageProgress,
+                g: white.g * (1.0 - stageProgress) + element.g * stageProgress,
+                b: white.b * (1.0 - stageProgress) + element.b * stageProgress
+            };
+            
+        } else {
+            // Stage 3: Progressive element color → cooling afterglow transition (50-100%)
+            const stageProgress = (progress - elementStageEnd) / (1.0 - elementStageEnd);
+            
+            if (meteor.trailColors && meteor.trailColors.length > 0) {
+                // Get afterglow color based on position in final stage
+                const afterglowIndex = Math.min(Math.floor(stageProgress * (meteor.trailColors.length / 3 - 1)) * 3, meteor.trailColors.length - 3);
+                
+                const element = meteor.color;
+                const afterglow = {
+                    r: meteor.trailColors[afterglowIndex],
+                    g: meteor.trailColors[afterglowIndex + 1],
+                    b: meteor.trailColors[afterglowIndex + 2]
+                };
+                
+                return {
+                    r: element.r * (1.0 - stageProgress) + afterglow.r * stageProgress,
+                    g: element.g * (1.0 - stageProgress) + afterglow.g * stageProgress,
+                    b: element.b * (1.0 - stageProgress) + afterglow.b * stageProgress
+                };
+            } else {
+                // Fallback: blend element color toward dark brown afterglow
+                const element = meteor.color;
+                const darkAftergow = { r: 0.55, g: 0.27, b: 0.07 }; // Dark brownish afterglow
+                
+                return {
+                    r: element.r * (1.0 - stageProgress) + darkAftergow.r * stageProgress,
+                    g: element.g * (1.0 - stageProgress) + darkAftergow.g * stageProgress,
+                    b: element.b * (1.0 - stageProgress) + darkAftergow.b * stageProgress
+                };
+            }
+        }
+    }
+    
     spawnMeteor() {
         // Find inactive meteor
         const meteorIndex = this.meteors.findIndex(m => !m.active);
@@ -759,28 +818,23 @@ export class ShootingStarSystem {
                 const alpha1 = Math.max(0, 1.0 - (i / maxTrailLength)) * meteor.trailIntensity;
                 const alpha2 = Math.max(0, 1.0 - ((i + 1) / maxTrailLength)) * meteor.trailIntensity;
                 
-                // Use afterglow colors if available, otherwise use base meteor color
+                // Create realistic gradient: white-hot head → gradual element color transition → afterglow tail
+                const rawProgress1 = i / (maxTrailLength - 1); // 0.0 at head to 1.0 at tail
+                const rawProgress2 = (i + 1) / (maxTrailLength - 1);
+                
+                // 3-Stage Scientific Meteor Trail Color Progression:
+                // Stage 1 (0-10%): Pure white-hot plasma (highest temperature)
+                // Stage 2 (10-50%): Progressive white → element color transition
+                // Stage 3 (50-100%): Progressive element color → cooling afterglow transition
+                
+                const whiteStageEnd = 0.1;      // 10% - end of pure white stage
+                const elementStageEnd = 0.5;    // 50% - end of element color stage
+                
                 let color1, color2;
-                if (meteor.trailColors && meteor.trailColors.length > i * 3 + 2) {
-                    // Color progression: Hot metal → Atmospheric glow → Cool afterglow
-                    const colorIndex1 = Math.min(i * 3, meteor.trailColors.length - 3);
-                    const colorIndex2 = Math.min((i + 1) * 3, meteor.trailColors.length - 3);
-                    
-                    color1 = {
-                        r: meteor.trailColors[colorIndex1],
-                        g: meteor.trailColors[colorIndex1 + 1],
-                        b: meteor.trailColors[colorIndex1 + 2]
-                    };
-                    
-                    color2 = {
-                        r: meteor.trailColors[colorIndex2],
-                        g: meteor.trailColors[colorIndex2 + 1],
-                        b: meteor.trailColors[colorIndex2 + 2]
-                    };
-                } else {
-                    // Fallback to base meteor color
-                    color1 = color2 = meteor.color;
-                }
+                
+                // Calculate colors for both points of the line segment
+                color1 = this.calculateTrailColor(rawProgress1, whiteStageEnd, elementStageEnd, meteor);
+                color2 = this.calculateTrailColor(rawProgress2, whiteStageEnd, elementStageEnd, meteor);
                 
                 // Colors for both points with afterglow progression
                 colors[i6 + 0] = color1.r;
