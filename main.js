@@ -41,11 +41,16 @@ const COORDINATE_SYSTEM = {
         const normalizedX = (screenX / this.SCREEN_WIDTH - 0.5);
         const normalizedY = Math.max(0, (this.HORIZON_Y - screenY) / (this.HORIZON_Y - this.GROUND_Y));
         
-        return {
+        const result = {
             x: normalizedX * this.WORLD_WIDTH,
             y: normalizedY * 10, // Scale to reasonable 3D height
             z: -20 + normalizedY * 20 // Depth based on perspective
         };
+        
+        // DEBUG LOGGING: Track coordinate conversions
+        console.log(`🔍 [DEBUG] screenTo3D: screen(${screenX}, ${screenY}) -> normalizedY=${normalizedY.toFixed(3)} -> 3D(${result.x.toFixed(2)}, ${result.y.toFixed(2)}, ${result.z.toFixed(2)})`);
+        
+        return result;
     },
     
     // Convert 3D world coordinates to screen coordinates

@@ -16,15 +16,9 @@ import * as THREE from 'three';
 
 export class ShootingStarSystem {
     constructor(renderer, coordinateSystem) {
-        console.log('🔧 CONSTRUCTOR: ShootingStarSystem starting...');
-        
         try {
-            console.log('🔧 CONSTRUCTOR: Step 1/5: Setting basic properties...');
             this.renderer = renderer;
             this.coordinateSystem = coordinateSystem;
-            console.log('✅ CONSTRUCTOR: Basic properties set');
-            
-            console.log('🔧 CONSTRUCTOR: Step 2/5: Creating camera...');
             // Create shared camera that integrates with main coordinate system
             this.camera = new THREE.PerspectiveCamera(
                 60,  // FOV
@@ -32,18 +26,13 @@ export class ShootingStarSystem {
                 0.1,   // Near
                 100    // Far
             );
-            console.log('✅ CONSTRUCTOR: Camera created');
-            
-            console.log('🔧 CONSTRUCTOR: Step 3/5: Setting up camera position...');
             this.setupCameraPosition();
-            console.log('✅ CONSTRUCTOR: Camera position setup');
         } catch (error) {
             console.error('❌ CONSTRUCTOR: Error in basic setup:', error);
             throw error;
         }
         
         try {
-            console.log('🔧 CONSTRUCTOR: Step 4/5: Setting up configuration...');
             // Shooting star configuration based on WORK_TODO.md requirements
             this.config = {
                 maxMeteors: 25,             // 25 simultaneous meteors max
@@ -106,9 +95,6 @@ export class ShootingStarSystem {
                     }
                 ]
             };
-            console.log('✅ CONSTRUCTOR: Configuration set');
-            
-            console.log('🔧 CONSTRUCTOR: Step 5/5: Initializing system state...');
             // System state
             this.scene = null;
             this.meteors = [];
@@ -126,11 +112,7 @@ export class ShootingStarSystem {
             this.trailUniforms = null;
             
             this.initialized = false;
-            console.log('✅ CONSTRUCTOR: System state initialized');
-            
-            console.log('🔧 CONSTRUCTOR: Calling init()...');
             this.init();
-            console.log('✅ CONSTRUCTOR: ShootingStarSystem constructor complete');
             
         } catch (error) {
             console.error('❌ CONSTRUCTOR: Error in configuration/init:', error);
@@ -151,42 +133,12 @@ export class ShootingStarSystem {
     }
     
     init() {
-        console.log('🌠 Initializing Shooting Star System...');
-        
-        // DEBUG: Log renderer alpha configuration
-        console.log('🔍 ALPHA DEBUG - Renderer Configuration:');
-        console.log(`   - Renderer alpha: ${this.renderer.domElement ? 'canvas detected' : 'no canvas'}`);
-        
-        // Safe clear color logging
-        let clearColorInfo = 'unknown';
         try {
-            const clearColor = this.renderer.getClearColor ? this.renderer.getClearColor() : null;
-            clearColorInfo = clearColor ? clearColor.getHexString() : 'not set';
-        } catch (e) {
-            clearColorInfo = 'error reading';
-        }
-        console.log(`   - Renderer clear color: ${clearColorInfo}`);
-        console.log(`   - Renderer clear alpha: ${this.renderer.getClearAlpha ? this.renderer.getClearAlpha() : 'unknown'}`);
-        
-        try {
-            console.log('🔧 Step 1/4: Setting up scene...');
             this.setupScene();
-            console.log('✅ Scene setup complete');
-            
-            console.log('🔧 Step 2/4: Creating meteor system...');
             this.createMeteorSystem();
-            console.log('✅ Meteor system created');
-            
-            console.log('🔧 Step 3/4: Creating trail system...');
             this.createTrailSystem();
-            console.log('✅ Trail system created');
-            
-            console.log('🔧 Step 4/4: Initializing meteors...');
             this.initializeMeteors();
-            console.log('✅ Meteors initialized');
-            
             this.initialized = true;
-            console.log('✅ Shooting Star System ready');
             
         } catch (error) {
             console.error('❌ Failed to initialize Shooting Star System:', error);
@@ -212,7 +164,7 @@ export class ShootingStarSystem {
     setupHDRBloom() {
         // Note: HDR Bloom with EffectComposer breaks transparency for layered rendering
         // Using enhanced shader-based glow instead to maintain transparent architecture
-        console.log('✨ Enhanced shader-based glow initialized (preserving transparency)');
+        // Enhanced shader-based glow initialized (preserving transparency)
     }
     
     createMeteorSystem() {
@@ -337,7 +289,7 @@ export class ShootingStarSystem {
         
         this.scene.add(this.trailSystem);
         
-        console.log(`🌟 Trail system: ${this.config.maxMeteors} meteors × ${trailPointsPerMeteor} segments = ${totalPoints} total segments`);
+        // Trail system configured
     }
     
     getMeteorVertexShader() {
@@ -619,7 +571,6 @@ export class ShootingStarSystem {
             const blendAmount = (0.8 - velocityFactor) / 0.8 * 0.4; // Max 40% blend for very slow
             meteor.color.lerp(atmosphericRed, blendAmount);
             
-            console.log(`   └─ Slow meteor: blended ${(blendAmount * 100).toFixed(1)}% atmospheric red`);
         }
         
         // For very fast meteors (> 1.3x base speed), intensify metallic colors
@@ -627,7 +578,6 @@ export class ShootingStarSystem {
             const intensification = Math.min((velocityFactor - 1.3) / 0.7, 0.3); // Max 30% intensification
             meteor.color.multiplyScalar(1.0 + intensification);
             
-            console.log(`   └─ Fast meteor: intensified metallic color by ${(intensification * 100).toFixed(1)}%`);
         }
     }
     
@@ -781,8 +731,7 @@ export class ShootingStarSystem {
         this.activeMeteors++;
         this.updateMeteorInstanceData(meteorIndex, meteor);
         
-        console.log(`🌟 ${selectedElement.name} meteor spawned at altitude ${meteor.position.y.toFixed(1)} with ${meteor.trailLength.toFixed(0)} trail length (speed: ${speed.toFixed(1)})`);
-        console.log(`   └─ Afterglow trail: ${trailColors.length / 3} color segments with progression`);
+        // Meteor spawned - no logging needed for normal operation
     }
     
     updateMeteorInstanceData(index, meteor) {
@@ -842,7 +791,7 @@ export class ShootingStarSystem {
         
         // Check if arrays are accessible
         if (!geometry.attributes.position.array || !geometry.attributes.color.array) {
-            console.warn('Trail geometry arrays not accessible');
+            // Trail geometry arrays not accessible - skipping trail update
             return;
         }
         
@@ -877,10 +826,7 @@ export class ShootingStarSystem {
                 const alpha1 = Math.max(0, 1.0 - (i / maxTrailLength)) * meteor.trailIntensity;
                 const alpha2 = Math.max(0, 1.0 - ((i + 1) / maxTrailLength)) * meteor.trailIntensity;
                 
-                // DEBUG: Log alpha values to diagnose transparency issue
-                if (i === 0 || i === Math.floor(maxTrailLength * 0.5) || i === maxTrailLength - 2) {
-                    console.log(`🔍 ALPHA DEBUG [${meteor.elementName}] Segment ${i}/${maxTrailLength}: alpha1=${alpha1.toFixed(3)}, alpha2=${alpha2.toFixed(3)}, trailIntensity=${meteor.trailIntensity.toFixed(3)}`);
-                }
+                // Alpha calculation for gradient effect - no logging needed
                 
                 // Create realistic gradient: white-hot head → gradual element color transition → afterglow tail
                 const rawProgress1 = i / (maxTrailLength - 1); // 0.0 at head to 1.0 at tail
@@ -995,7 +941,6 @@ export class ShootingStarSystem {
                 // Check for burst spawning
                 if (Math.random() < this.config.burstChance) {
                     const burstCount = Math.floor(Math.random() * 4) + 2; // 2-5 meteors
-                    console.log(`💥 Meteor burst! Spawning ${burstCount} meteors`);
                     
                     for (let i = 0; i < burstCount && this.activeMeteors < this.config.maxMeteors; i++) {
                         setTimeout(() => this.spawnMeteor(), i * 100); // Stagger burst spawning
@@ -1033,7 +978,6 @@ export class ShootingStarSystem {
     }
     
     disintegrateMeteor(meteor) {
-        console.log(`💥 Meteor disintegrated at height ${meteor.position.y.toFixed(1)}`);
         
         // Create disintegration flash effect
         this.createDisintegrationFlash(meteor.position.clone());
@@ -1142,6 +1086,5 @@ export class ShootingStarSystem {
             this.trailSystem.material.dispose();
         }
         
-        console.log('🗑️ Shooting Star System disposed');
     }
 }

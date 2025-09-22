@@ -35,10 +35,10 @@ export class VaporSystem {
                 new THREE.Color(0x8800ff)  // Neon purple
             ],
             
-            // Physics
-            windSpeed: 0.5,             // Small wind direction speed
-            windDirection: new THREE.Vector3(0.1, 0, 0.05),
-            groundHugging: 0.95,        // How much vapors follow ground
+            // Enhanced Physics for better movement visibility
+            windSpeed: 2.0,             // Increased wind speed for visible movement
+            windDirection: new THREE.Vector3(0.3, 0, 0.15), // Stronger wind direction
+            groundHugging: 0.8,         // Slightly less aggressive ground hugging
             mitosisChance: 0.02,        // 2% chance per second for mitosis
         };
         
@@ -162,13 +162,16 @@ export class VaporSystem {
             vertexShader: this.getVertexShader(),
             fragmentShader: this.getFragmentShader(),
             
-            // Transparency settings
+            // Enhanced transparency settings for better visibility
             transparent: true,
             depthWrite: false,
             depthTest: true,
-            blending: THREE.AdditiveBlending, // Neon glow effect
-            side: THREE.DoubleSide
+            blending: THREE.NormalBlending, // Better visibility than AdditiveBlending
+            side: THREE.DoubleSide,
+            alphaTest: 0.01 // Discard very transparent pixels
         });
+        
+        console.log('🎨 Vapor material configured with NormalBlending for enhanced visibility');
     }
     
     getVertexShader() {
@@ -317,35 +320,35 @@ export class VaporSystem {
                 vec2 center = vUv - 0.5;
                 float dist = length(center);
                 
-                // Soft circular falloff
-                float circle = 1.0 - smoothstep(0.3, 0.5, dist);
+                // Enhanced circular falloff for better visibility
+                float circle = 1.0 - smoothstep(0.2, 0.6, dist);
                 
                 // Add noise for organic shape
-                vec2 noisePos = vUv * 8.0 + time * 0.5;
-                float noise = fbm(noisePos) * 0.3;
-                circle = circle + noise - 0.15;
+                vec2 noisePos = vUv * 6.0 + time * 0.3;
+                float noise = fbm(noisePos) * 0.4;
+                circle = circle + noise - 0.1;
                 circle = max(0.0, circle);
                 
-                // Neon glow effect
-                float glow = exp(-dist * 3.0) * 0.8;
+                // Enhanced glow effect for visibility
+                float glow = exp(-dist * 2.0) * 1.2;
                 
-                // Combine shape and glow
-                float alpha = (circle * 0.7 + glow * 0.3) * vColor.a;
+                // Combine shape and glow with higher intensity
+                float alpha = (circle * 0.8 + glow * 0.5) * vColor.a;
                 
-                // Age-based fade (appear and disappear smoothly)
-                if (vAge < 0.1) {
-                    alpha *= vAge / 0.1; // Fade in
-                } else if (vAge > 0.9) {
-                    alpha *= (1.0 - vAge) / 0.1; // Fade out
+                // More gradual age-based fade
+                if (vAge < 0.15) {
+                    alpha *= vAge / 0.15; // Slower fade in
+                } else if (vAge > 0.85) {
+                    alpha *= (1.0 - vAge) / 0.15; // Slower fade out
                 }
                 
-                // Final color with neon brightness
-                vec3 finalColor = vColor.rgb * 1.5; // Boost for neon effect
+                // Enhanced color with stronger neon brightness
+                vec3 finalColor = vColor.rgb * 2.5; // Stronger boost for better visibility
                 
                 gl_FragColor = vec4(finalColor, alpha);
                 
-                // Discard very transparent pixels for performance
-                if (alpha < 0.01) discard;
+                // Lower threshold for discarding pixels
+                if (alpha < 0.005) discard;
             }
         `;
     }
@@ -357,9 +360,14 @@ export class VaporSystem {
             this.config.maxParticles
         );
         
+        // Apply significant scaling based on Three.js best practices
+        this.instancedMesh.scale.set(10, 10, 10); // Scale up particles for visibility
+        
         // Set render order for proper transparency
         this.instancedMesh.renderOrder = 1;
         this.instancedMesh.frustumCulled = false; // Don't cull particles
+        
+        console.log('🔧 Vapor mesh scaled by 10x for visibility');
         
         this.scene.add(this.instancedMesh);
     }
@@ -396,17 +404,36 @@ export class VaporSystem {
         
         const particle = this.particles[particleIndex];
         
-        // Generate spawn position at ground level
-        const spawnRadius = 15; // Within visible area
+        // Use coordinate system for proper 2D to 3D mapping
+        const screenRadius = 800; // Screen space radius for spawning
         const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * spawnRadius;
+        const radius = Math.random() * screenRadius;
         
-        // Use coordinate system to ensure proper positioning
+        // Generate screen coordinates for ground level
+        const screenX = this.coordinateSystem.SCREEN_WIDTH/2 + Math.cos(angle) * radius;
+        const screenY = this.coordinateSystem.GROUND_Y + Math.random() * 50; // Near ground level
+        
+        // DEBUG: Log coordinate system boundaries
+        console.log(`🔍 [VAPOR DEBUG] Coordinate system: GROUND_Y=${this.coordinateSystem.GROUND_Y}, HORIZON_Y=${this.coordinateSystem.HORIZON_Y}, GROUND_LEVEL=${this.coordinateSystem.GROUND_LEVEL}`);
+        console.log(`🔍 [VAPOR DEBUG] Input screen coords: (${screenX.toFixed(0)}, ${screenY.toFixed(0)})`);
+        
+        // Convert to 3D world coordinates
+        const world3D = this.coordinateSystem.screenTo3D(screenX, screenY);
+        
+        // DEBUG: Check if coordinate conversion is working correctly
+        const expectedGroundY = this.coordinateSystem.GROUND_LEVEL; // Should be 0
+        console.log(`🔍 [VAPOR DEBUG] Converted 3D coords: (${world3D.x.toFixed(2)}, ${world3D.y.toFixed(2)}, ${world3D.z.toFixed(2)}), expected ground Y: ${expectedGroundY}`);
+        
         particle.position.set(
-            Math.cos(angle) * radius,
-            this.coordinateSystem.GROUND_LEVEL + 0.1,
-            Math.sin(angle) * radius
+            world3D.x,
+            Math.max(this.coordinateSystem.GROUND_LEVEL, world3D.y),
+            world3D.z
         );
+        
+        // DEBUG: Log final particle position
+        console.log(`🔍 [VAPOR DEBUG] Final particle position after Math.max: (${particle.position.x.toFixed(2)}, ${particle.position.y.toFixed(2)}, ${particle.position.z.toFixed(2)})`);
+        
+        console.log(`🌫️ Spawning vapor ${particleIndex} at screen(${screenX.toFixed(0)}, ${screenY.toFixed(0)}) -> 3D(${world3D.x.toFixed(2)}, ${world3D.y.toFixed(2)}, ${world3D.z.toFixed(2)})`);
         
         // Initialize particle properties
         particle.active = true;
@@ -427,7 +454,7 @@ export class VaporSystem {
         particle.color.copy(this.config.neonColors[colorIndex]);
         
         particle.opacity = 0;
-        particle.targetOpacity = 0.3 + Math.random() * 0.4;
+        particle.targetOpacity = 0.8 + Math.random() * 0.7; // Much higher opacity for visibility
         
         // Small random velocity
         particle.velocity.set(
@@ -480,6 +507,12 @@ export class VaporSystem {
         
         this.time = elapsedTime;
         this.uniforms.time.value = this.time;
+        
+        // Debug logging every 5 seconds
+        if (Math.floor(elapsedTime) % 5 === 0 && Math.floor(elapsedTime) !== Math.floor(elapsedTime - deltaTime)) {
+            console.log(`🌫️ Vapor System Status: ${this.activeParticles}/${this.config.maxParticles} active particles`);
+            console.log(`🌫️ Wind direction: (${this.config.windDirection.x}, ${this.config.windDirection.y}, ${this.config.windDirection.z}), speed: ${this.config.windSpeed}`);
+        }
         
         // Spawn new vapors based on spawn rate
         if (this.time - this.lastSpawnTime > 1.0 / this.config.spawnRate) {
@@ -567,27 +600,34 @@ export class VaporSystem {
     }
     
     applyPhysics(particle, deltaTime) {
-        // Apply wind
+        // Apply enhanced wind force
         const windForce = this.config.windDirection.clone()
             .multiplyScalar(this.config.windSpeed * deltaTime);
         particle.velocity.add(windForce);
         
-        // Apply velocity
+        // Apply velocity with visible movement
         particle.position.add(
             particle.velocity.clone().multiplyScalar(deltaTime)
         );
         
-        // Ground hugging - keep particles near ground level
-        const targetY = this.coordinateSystem.GROUND_LEVEL + 0.1 + 
-            Math.sin(this.time + particle.position.x) * 0.2;
+        // Enhanced ground hugging with more natural variation
+        const groundVariation = Math.sin(this.time * 0.5 + particle.position.x) * 0.5 +
+                               Math.cos(this.time * 0.3 + particle.position.z) * 0.3;
+        const targetY = this.coordinateSystem.GROUND_LEVEL + 0.2 + groundVariation;
+        
         particle.position.y = THREE.MathUtils.lerp(
-            particle.position.y, 
-            targetY, 
+            particle.position.y,
+            targetY,
             this.config.groundHugging * deltaTime
         );
         
-        // Damping
-        particle.velocity.multiplyScalar(0.98);
+        // Less aggressive damping for more visible movement
+        particle.velocity.multiplyScalar(0.95);
+        
+        // Log position updates for debugging (every 50th frame to avoid spam)
+        if (Math.random() < 0.02) { // 2% chance to log
+            console.log(`🌊 Particle physics: pos(${particle.position.x.toFixed(2)}, ${particle.position.y.toFixed(2)}, ${particle.position.z.toFixed(2)}), vel(${particle.velocity.x.toFixed(3)}, ${particle.velocity.y.toFixed(3)}, ${particle.velocity.z.toFixed(3)})`);
+        }
     }
     
     attemptMitosis(particle) {
@@ -606,14 +646,20 @@ export class VaporSystem {
     }
     
     getCamera() {
-        // Create orthographic camera for 2D-like rendering
-        const camera = new THREE.OrthographicCamera(
-            -20, 20,  // left, right
-            15, -5,   // top, bottom  
-            0.1, 100  // near, far
+        // Use perspective camera matching main coordinate system
+        const camera = new THREE.PerspectiveCamera(
+            50,  // FOV matching other systems
+            window.innerWidth / window.innerHeight,  // aspect ratio
+            0.1,   // near
+            1000   // far
         );
-        camera.position.set(0, 10, 10);
-        camera.lookAt(0, 0, 0);
+        
+        // Position camera to match main coordinate system perspective
+        camera.position.set(0, 15, 20);
+        camera.lookAt(0, this.coordinateSystem.GROUND_LEVEL, 0);
+        
+        console.log('🎥 Vapor camera positioned at:', camera.position, 'looking at ground level:', this.coordinateSystem.GROUND_LEVEL);
+        
         return camera;
     }
     
